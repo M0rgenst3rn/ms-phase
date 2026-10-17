@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="phase">
+  <div class="layout">
+  <div class="top">
+    <div class="header">
+      <span class="title"><b>MS</b> PHASE</span>
+      <span id="targetName" class="layer-name">–</span>
+    </div>
+    <div id="previewBox" class="preview-box tall">
+      <img id="preview" class="hidden">
+      <div id="previewMsg" class="preview-msg">Dokument öffnen…</div>
+    </div>
+    <div class="seg target" id="targetSeg">
+      <div class="seg-btn" data-target="document">▣ Ganzes Dokument</div>
+      <div class="seg-btn" data-target="layers">◧ Nur ausgewählte Ebene</div>
+    </div>
+    <div id="targetInfo" class="target-info"></div>
+    <div class="seg" id="previewModeSeg">
+      <div class="seg-btn active" data-mode="fit">Ganzes Bild</div>
+      <div class="seg-btn" data-mode="detail">Detail 1:1</div>
+    </div>
+    <div class="row between">
+      <label class="check"><input type="checkbox" id="previewOriginal"> Original zeigen</label>
+      <label class="check live" title="Änderungen direkt im Dokument anzeigen"><input type="checkbox" id="liveCanvas"> Live</label>
+      <sp-action-button size="s" quiet id="refreshPreview" title="Vorschau neu laden">↻</sp-action-button>
+    </div>
+
+    <div class="strength-row" id="secStrengthTop"></div>
+    <div class="actions">
+      <sp-button size="s" variant="cta" id="apply">Look anwenden</sp-button>
+      <sp-button size="s" variant="secondary" id="remove">Entfernen</sp-button>
+      <sp-action-button size="s" quiet id="verify" title="Vergleicht das Ergebnis im Dokument mit den aktuellen Einstellungen">Prüfen</sp-action-button>
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="scroller">
+  <div class="wrap">
+    <div class="section first">
+      <div class="section-title">Looks <span id="lookName" class="muted"></span></div>
+      <div id="lookGrid" class="look-grid"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Signal</div>
+      <div class="seg" id="modeSeg"></div>
+      <div id="modeHint" class="hint"></div>
+      <div id="secSignal"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Farbe</div>
+      <div class="seg" id="colorSeg">
+        <div class="seg-btn" data-color="original">Original</div>
+        <div class="seg-btn" data-color="phosphor">Phosphor (einfarbig)</div>
+      </div>
+      <div id="tintRow" class="row">
+        <div id="tintSwatches" class="swatches"></div>
+        <div id="swatch-tint" class="swatch" title="Eigene Farbe wählen"></div>
+        <input type="text" id="hex-tint" class="hex" maxlength="7">
+      </div>
+      <div id="secColor"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Bildschirm</div>
+      <div class="row"><span class="ctl-label">Phosphor-Maske</span><select id="mask" class="grow"></select></div>
+      <div id="secMask"></div>
+      <div id="secScreen"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Röhre</div>
+      <div id="secTube"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Störungen</div>
+      <div id="secNoise"></div>
+      <div class="row">
+        <span class="ctl-label">Seed</span>
+        <input type="text" id="seed" class="seed">
+        <sp-action-button size="s" id="dice">🎲 Würfeln</sp-action-button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Ebenen im Dokument</div>
+      <div class="hint">MS Phase legt eine Gruppe mit echten Ebenen an: <b>Signal</b>, <b>Maske</b>, <b>Scanlines</b>, <b>Glas</b> (Multiplizieren) und <b>Leuchten</b> (Negativ multiplizieren). Bei Ebenen liegt das Original sichtbar unter dem Effekt in der Gruppe – Entfernen stellt es wieder her. Deckkraft und Mischmodus lassen sich auch direkt in Photoshop ändern.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Eigene Presets</div>
+      <select id="presetSelect"></select>
+      <div class="row">
+        <input type="text" id="presetName" class="grow" placeholder="Eigenes Preset…">
+        <sp-action-button size="s" id="presetSave">Speichern</sp-action-button>
+        <sp-action-button size="s" quiet id="presetDelete">Löschen</sp-action-button>
+      </div>
+      <div class="row">
+        <sp-action-button size="s" quiet id="resetAll">Alles zurücksetzen</sp-action-button>
+        <sp-action-button size="s" quiet id="selfTest" title="Legt ein Testdokument an und prüft alle Funktionen">Selbsttest</sp-action-button>
+      </div>
+    </div>
+  </div>
+  </div>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>
