@@ -1,5 +1,5 @@
-"""Erzeugt eine Testszene (Kugel, Sonnenuntergang, Gitterboden, Schrift) als PNG und rohe RGBA-Datei.
-Aufruf: python3 tools/make-scene.py <out.png> <breite> <hoehe> [text]"""
+"""Creates a test scene (sphere, sunset, grid floor, lettering) as PNG and raw RGBA file.
+Usage: python3 tools/make-scene.py <out.png> <width> <height> [text]"""
 import sys, math
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
@@ -18,7 +18,7 @@ for y in range(H):
             r = int(30 * (1 - t)); g = int(8 + 10 * (1 - t)); b = int(40 + 30 * (1 - t))
         px[x, y] = (r, g, b)
 d = ImageDraw.Draw(img)
-# Sonne mit Streifen
+# sun with stripes
 cx, cy, R = int(W * 0.5), int(hor - H * 0.02), int(H * 0.26)
 for y in range(cy - R, cy + 1):
     if y < 0: continue
@@ -29,14 +29,14 @@ for y in range(cy - R, cy + 1):
         if 0 <= x < W:
             t = (y - (cy - R)) / R
             px[x, y] = (255, int(220 - 150 * t), int(90 - 60 * t))
-# Gitterboden
+# grid floor
 for i in range(-14, 15):
     x0 = cx + i * W * 0.012; x1 = cx + i * W * 0.12
     d.line([(x0, hor), (x1, H)], fill=(255, 60, 200), width=max(1, W // 400))
 y = hor; step = H * 0.012
 while y < H:
     d.line([(0, y), (W, y)], fill=(255, 60, 200), width=max(1, W // 400)); step *= 1.35; y += step
-# beleuchtete Kugel links
+# lit sphere on the left
 sx, sy, sr = int(W * 0.18), int(H * 0.42), int(H * 0.2)
 for y in range(sy - sr, sy + sr):
     for x in range(sx - sr, sx + sr):
@@ -46,7 +46,7 @@ for y in range(sy - sr, sy + sr):
             z = math.sqrt(1 - q); l = max(0, -0.5 * dx - 0.6 * dy + 0.62 * z)
             spec = max(0, l) ** 30
             px[x, y] = (int(40 + 150 * l + 120 * spec), int(120 + 120 * l + 100 * spec), int(160 + 95 * l))
-# Schrift
+# lettering
 f = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Black.ttf", int(H * 0.2))
 tw = d.textlength(text, font=f)
 layer = Image.new("RGBA", (W, H)); ld = ImageDraw.Draw(layer)

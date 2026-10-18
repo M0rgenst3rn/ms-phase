@@ -1,4 +1,4 @@
-/* MS Phase – Ergänzungen zum gemeinsamen Morgenstern-Design (ms-ui.css) */
+/* Morgenstern Phase – additions to the shared Morgenstern design (ms-ui.css) */
 .mode-hint { margin: 6px 0 2px; }
 .grad-presets { display: flex; flex-direction: row; flex-wrap: wrap; margin: 4px 0 4px; }
 .grad { display: flex; flex-direction: row; height: 16px; width: 46px; margin: 0 5px 5px 0; border-radius: 8px; border: 1px solid #263256; cursor: pointer; overflow: hidden; }

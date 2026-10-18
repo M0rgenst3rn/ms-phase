@@ -1,12 +1,12 @@
 "use strict";
 // MS Phase – Photoshop-UXP-Panel.
-// Röhrenfernseher-Look für das ganze Dokument oder einzelne Ebenen, nicht-destruktiv:
-//  • Ganzes Dokument: oben eine Gruppe „MS Phase“ mit echten Ebenen (Signal, Maske, Scanlines, Glas, Leuchten).
-//    Das Artwork darunter bleibt unverändert.
-//  • Ausgewählte Ebenen: jede Ebene wandert in eine Gruppe „MS Phase · Name“; das Original liegt sichtbar darin,
-//    das Signal deckt genau seine Form ab (Ebenenmaske berücksichtigt), Maske/Scanlines/Glas sind per
-//    Schnittmaske auf das Signal begrenzt. Entfernen stellt alles wieder her.
-// Die Einstellungen stehen im XMP der Signal-Ebene – Gruppe auswählen lädt sie wieder ins Panel.
+// CRT TV look for the whole document or single layers, non-destructive:
+//  • Whole document: a group "MS Phase" on top with real layers (signal, mask, scanlines, glass, bloom).
+//    The artwork below stays untouched.
+//  • Selected layers: each layer moves into a group "MS Phase · name"; the original stays visible inside,
+//    the signal covers exactly its shape (layer mask respected), mask/scanlines/glass are clipped
+//    to the signal. Remove restores everything.
+// The settings live in the XMP of the signal layer – selecting the group loads them back into the panel.
 
 const { app, core, action, imaging, constants } = require("photoshop");
 const { batchPlay } = action;
@@ -25,40 +25,41 @@ const HIST = "MS Phase";
 const XMP_NS = "http://ms-phase/1.0/";
 const MAX_PIXELS = 60e6;
 const TARGET = [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }];
-const RENDER_NAMES = new Set(Core.LAYERS.map((l) => l.name));
+// effect layer names, including the German names of earlier versions
+const RENDER_NAMES = new Set(Core.LAYERS.map((l) => l.name).concat(["Leuchten", "Glas", "Maske"]));
 
 const lineMode = (p) => p.mode !== "clear";
 const waveMode = (p) => p.mode === "wave" || p.mode === "swirl";
 const SLIDERS = [
-  { key: "strength", label: "Deckkraft", min: 0, max: 100, step: 1, unit: "%", parent: "secStrengthTop" },
-  { key: "lines", label: "Zeilen", min: 40, max: 600, step: 1, unit: "", parent: "secSignal", tip: "Zeilen über die ganze Bildhöhe – wie die Auflösung eines Fernsehers" },
-  { key: "wave", label: "Wellen", min: 0, max: 100, step: 1, unit: "%", parent: "secSignal", show: waveMode, tip: "Wie stark helle Stellen die Zeilen verbiegen" },
-  { key: "smooth", label: "Glättung", min: 0, max: 100, step: 1, unit: "%", parent: "secFineSignal", show: waveMode, tip: "Weichere, größere Wellen" },
-  { key: "thickness", label: "Linienstärke", min: 10, max: 100, step: 1, unit: "%", parent: "secFineSignal", show: lineMode, tip: "Stärke der Zeilen an den hellsten Stellen" },
-  { key: "dots", label: "Punkte", min: 0, max: 100, step: 1, unit: "%", parent: "secFineSignal", show: lineMode, tip: "Zerlegt die Zeilen in leuchtende Punkte" },
-  { key: "contrast", label: "Kontrast", min: -50, max: 100, step: 1, unit: "", parent: "secFineColor" },
-  { key: "brightness", label: "Helligkeit", min: -50, max: 50, step: 1, unit: "", parent: "secFineColor" },
-  { key: "maskSize", label: "Maskengröße", min: 50, max: 400, step: 5, unit: "%", parent: "secFineColor", show: (p) => p.mask !== "none" },
-  { key: "maskStrength", label: "Masken-Stärke", min: 0, max: 100, step: 1, unit: "%", parent: "secMask", show: (p) => p.mask !== "none" },
+  { key: "strength", label: "Opacity", min: 0, max: 100, step: 1, unit: "%", parent: "secStrengthTop" },
+  { key: "lines", label: "Lines", min: 40, max: 600, step: 1, unit: "", parent: "secSignal", tip: "Lines over the whole image height – like a TV's resolution" },
+  { key: "wave", label: "Waves", min: 0, max: 100, step: 1, unit: "%", parent: "secSignal", show: waveMode, tip: "How strongly bright areas bend the lines" },
+  { key: "smooth", label: "Smoothing", min: 0, max: 100, step: 1, unit: "%", parent: "secFineSignal", show: waveMode, tip: "Softer, larger waves" },
+  { key: "thickness", label: "Line thickness", min: 10, max: 100, step: 1, unit: "%", parent: "secFineSignal", show: lineMode, tip: "Thickness of the lines at the brightest spots" },
+  { key: "dots", label: "Dots", min: 0, max: 100, step: 1, unit: "%", parent: "secFineSignal", show: lineMode, tip: "Breaks the lines into glowing dots" },
+  { key: "contrast", label: "Contrast", min: -50, max: 100, step: 1, unit: "", parent: "secFineColor" },
+  { key: "brightness", label: "Brightness", min: -50, max: 50, step: 1, unit: "", parent: "secFineColor" },
+  { key: "maskSize", label: "Mask size", min: 50, max: 400, step: 5, unit: "%", parent: "secFineColor", show: (p) => p.mask !== "none" },
+  { key: "maskStrength", label: "Mask strength", min: 0, max: 100, step: 1, unit: "%", parent: "secMask", show: (p) => p.mask !== "none" },
   { key: "scanlines", label: "Scanlines", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
-  { key: "bloom", label: "Leuchten", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
-  { key: "bloomRadius", label: "Leucht-Radius", min: 5, max: 100, step: 1, unit: "%", parent: "secScreen", show: (p) => p.bloom > 0, sub: true },
-  { key: "curvature", label: "Wölbung", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
-  { key: "corners", label: "Runde Ecken", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube" },
+  { key: "bloom", label: "Bloom", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
+  { key: "bloomRadius", label: "Bloom radius", min: 5, max: 100, step: 1, unit: "%", parent: "secScreen", show: (p) => p.bloom > 0, sub: true },
+  { key: "curvature", label: "Curvature", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
+  { key: "corners", label: "Round corners", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube" },
   { key: "vignette", label: "Vignette", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
-  { key: "tilt", label: "Schräge", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube", tip: "Wie schräg abfotografiert: leicht gedreht und trapezförmig" },
-  { key: "moire", label: "Moiré", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube", tip: "Farbige Streifen wie auf einem abfotografierten Bildschirm" },
-  { key: "reflection", label: "Reflex", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube", tip: "Spiegelung auf dem Glas und Lichtsaum am Röhrenrand" },
-  { key: "rgbShift", label: "RGB-Versatz", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube" },
-  { key: "ghost", label: "Geisterbild", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube" },
-  { key: "noise", label: "Rauschen", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
-  { key: "rollbar", label: "Bildlauf-Balken", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise" },
-  { key: "jitter", label: "Tracking", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Zeilen zittern seitlich wie bei einem Videoband" },
-  { key: "glitch", label: "Glitch", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Verschobene, grob gerasterte Blöcke" },
-  { key: "interlace", label: "Halbbild-Versatz", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Jede zweite Zeile seitlich verschoben, wie bei abgefilmten Fernsehern" },
-  { key: "wobble", label: "Schwingen", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Das ganze Bild schwingt wellenförmig – schlechter Empfang" },
-  { key: "burnIn", label: "Einbrennen", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Schwaches, festes Geisterbild der hellen Bildteile" },
-  { key: "osdSize", label: "Schriftgröße", min: 1.5, max: 12, step: 0.5, unit: "%", parent: "secOsd" },
+  { key: "tilt", label: "Tilt", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube", tip: "As if photographed at an angle: slightly rotated and keystoned" },
+  { key: "moire", label: "Moiré", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube", tip: "Coloured stripes like on a photographed screen" },
+  { key: "reflection", label: "Reflex", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube", tip: "Reflection on the glass and a light rim at the tube edge" },
+  { key: "rgbShift", label: "RGB shift", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube" },
+  { key: "ghost", label: "Ghosting", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube" },
+  { key: "noise", label: "Noise", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
+  { key: "rollbar", label: "Roll bar", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise" },
+  { key: "jitter", label: "Tracking", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Lines jitter sideways like on a video tape" },
+  { key: "glitch", label: "Glitch", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Shifted, coarsely pixelated blocks" },
+  { key: "interlace", label: "Interlace", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Every second line shifted sideways, like a filmed TV" },
+  { key: "wobble", label: "Wobble", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "The whole image wobbles in waves – bad reception" },
+  { key: "burnIn", label: "Burn-in", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Faint, fixed ghost of the bright parts" },
+  { key: "osdSize", label: "Text size", min: 1.5, max: 12, step: 0.5, unit: "%", parent: "secOsd" },
 ];
 
 let params = loadParams();
@@ -69,10 +70,10 @@ let previewMode = "fit";
 let busy = false;
 let activeLook = null;
 const ctl = {};
-const lastApplied = new Map();     // Ziel-Schlüssel -> Parameter (für den Hinweis „noch nicht angewendet“)
-let loadedKey = null;              // Gruppe, deren Einstellungen zuletzt ins Panel geladen wurden
+const lastApplied = new Map();     // target key -> params (for the "not applied yet" hint)
+let loadedKey = null;              // group whose settings were last loaded into the panel
 
-// ---------------------------------------------------------------- Persistenz
+// ---------------------------------------------------------------- Persistence
 function loadParams() { try { return Core.sanitize(JSON.parse(localStorage.getItem(STORE_KEY) || "{}")); } catch (e) { return Object.assign({}, Core.DEFAULTS); } }
 function saveParams() { try { localStorage.setItem(STORE_KEY, JSON.stringify(params)); } catch (e) { /* egal */ } }
 function loadTarget() { try { return localStorage.getItem(TARGET_KEY) === "layers" ? "layers" : "document"; } catch (e) { return "document"; } }
@@ -80,7 +81,7 @@ function saveTarget() { try { localStorage.setItem(TARGET_KEY, target); } catch 
 function loadUserPresets() { try { return JSON.parse(localStorage.getItem(PRESET_KEY) || "{}"); } catch (e) { return {}; } }
 function saveUserPresets(p) { try { localStorage.setItem(PRESET_KEY, JSON.stringify(p)); } catch (e) { /* egal */ } }
 
-// ---------------------------------------------------------------- Helfer
+// ---------------------------------------------------------------- Helpers
 function setStatus(msg, isErr) { const el = $("status"); el.textContent = msg || ""; el.className = isErr ? "status err" : "status"; }
 function debounce(fn, ms) { let t = null; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -88,7 +89,7 @@ function hexToRgb(hex) { const n = parseInt(String(hex).slice(1), 16); return { 
 function rgbToHex(r, g, b) { return "#" + [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join(""); }
 function docBounds(doc) { return { left: 0, top: 0, right: Math.round(Number(doc.width)), bottom: Math.round(Number(doc.height)) }; }
 function boundsOf(layer) { const b = layer.boundsNoEffects || layer.bounds; return { left: Math.floor(b.left), top: Math.floor(b.top), right: Math.ceil(b.right), bottom: Math.ceil(b.bottom) }; }
-// Bereich einer Ebene mit Rand für das Leuchten (5 % der Dokumenthöhe), auf das Dokument begrenzt
+// Area of a layer with a margin for the bloom (5 % of the document height), limited to the document
 function layerRegion(doc, layer) {
   const d = docBounds(doc), b = boundsOf(layer), pad = Math.round(d.bottom * 0.05);
   return clampBounds({ left: b.left - pad, top: b.top - pad, right: b.right + pad, bottom: b.bottom + pad }, d);
@@ -115,7 +116,7 @@ function to8bit(data, cs) {
   return out;
 }
 function fromBuf8(buf, doc) {
-  if (buf instanceof Uint8ClampedArray) buf = new Uint8Array(buf.buffer, buf.byteOffset, buf.length);   // Photoshop nimmt nur Uint8/Uint16/Float32
+  if (buf instanceof Uint8ClampedArray) buf = new Uint8Array(buf.buffer, buf.byteOffset, buf.length);   // Photoshop only takes Uint8/Uint16/Float32
   const depth = String(doc.bitsPerChannel || "");
   if (depth.indexOf("16") >= 0) { const out = new Uint16Array(buf.length); for (let i = 0; i < buf.length; i++) out[i] = Math.round(buf[i] * 32768 / 255); return out; }
   if (depth.indexOf("32") >= 0) { const out = new Float32Array(buf.length); for (let i = 0; i < buf.length; i++) out[i] = buf[i] / 255; return out; }
@@ -132,11 +133,11 @@ function toRGBA(raw, comps, n) {
 }
 function needsRGB(doc) {
   if (String(doc.mode).toLowerCase().indexOf("rgb") >= 0) return false;
-  setStatus("MS Phase braucht ein RGB-Dokument – Bild › Modus › RGB-Farbe.", true);
+  setStatus("MS Phase needs an RGB document – Image › Mode › RGB Color.", true);
   return true;
 }
 
-// ---------------------------------------------------------------- Protokoll
+// ---------------------------------------------------------------- Log
 const logLines = [];
 let logTimer = null;
 function log(msg, data) {
@@ -148,7 +149,7 @@ function log(msg, data) {
   }, 300);
 }
 
-// ---------------------------------------------------------------- XMP (Einstellungen an der Signal-Ebene)
+// ---------------------------------------------------------------- XMP (settings on the signal layer)
 function xmpFor(p, sourceId) {
   const json = JSON.stringify({ params: p, sourceId: sourceId || null }).replace(/&/g, "&amp;").replace(/</g, "&lt;");
   return `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:msphase="${XMP_NS}"><msphase:params>${json}</msphase:params></rdf:Description></rdf:RDF></x:xmpmeta>`;
@@ -171,11 +172,11 @@ async function groupInfo(group) {
   const signal = kids.find((k) => k.name === "Signal" && !k.layers);
   const saved = signal ? await readXmp(signal.id) : null;
   let source = saved && saved.sourceId ? kids.find((k) => k.id === saved.sourceId) : null;
-  if (!source) source = kids.slice().reverse().find((k) => !RENDER_NAMES.has(k.name)) || null;   // ältere/fremde Gruppen
+  if (!source) source = kids.slice().reverse().find((k) => !RENDER_NAMES.has(k.name)) || null;   // older/foreign groups
   return { group, source, signal, saved };
 }
 
-// Ebenen-Ziele: ausgewählte Ebenen; eine MS-Phase-Gruppe (oder eine Ebene darin) steht für ihr Original
+// Layer targets: selected layers; an effect group (or a layer inside it) stands for its original
 async function resolveTargets(doc) {
   const out = [], seen = new Set(), skipped = [];
   for (const l of doc.activeLayers || []) {
@@ -198,10 +199,10 @@ async function resolveTargets(doc) {
   return { targets: out, skipped };
 }
 
-// ---------------------------------------------------------------- Pixel lesen
-// Dokument OHNE die MS-Phase-Dokumentgruppe. hide/show: weitere Ebenen kurz aus-/einblenden (Protokoll wird
-// zurückgerollt). inHistory: läuft schon in einem eigenen Protokollschritt – dann nichts aus-/einblenden,
-// was danach nicht ohnehin ersetzt wird.
+// ---------------------------------------------------------------- Reading pixels
+// Document WITHOUT the effect's document group. hide/show: briefly hide/show more layers (history is
+// rolled back). inHistory: already runs inside its own history step – then hide/show nothing
+// that isn't replaced afterwards anyway.
 async function readComposite(ctx, doc, sourceBounds, targetSize, opt) {
   opt = opt || {};
   const hide = docGroups(doc).filter((g) => g.visible).concat((opt.hide || []).filter((l) => l.visible));
@@ -232,8 +233,8 @@ async function hasActiveMask(id) {
     return !!(r && r[0] && r[0].hasUserMask) && !(r[1] && r[1].userMaskEnabled === false);
   } catch (e) { return false; }
 }
-// Pixel einer Ebene in voller Auflösung über sourceBounds – inkl. Ebenenmaske (freigestellte Objekte).
-// Ein ausgeblendetes Original wird kurz eingeblendet. inHistory: läuft schon in einem eigenen Protokollschritt.
+// Pixels of a layer at full resolution over sourceBounds – including the layer mask (cut-out objects).
+// A hidden original is shown briefly. inHistory: already runs inside its own history step.
 async function readLayer(ctx, doc, layer, sourceBounds, inHistory) {
   let hid = null;
   const wasHidden = !layer.visible;
@@ -244,7 +245,7 @@ async function readLayer(ctx, doc, layer, sourceBounds, inHistory) {
     const res = await imaging.getPixels({ documentID: doc.id, layerID: layer.id, sourceBounds, colorSpace: "RGB", componentSize: 8 });
     const id = res.imageData, raw = to8bit(await id.getData({ chunky: true }), id.componentSize || 8);
     const sb = res.sourceBounds || sourceBounds, src = toRGBA(raw, id.components, id.width * id.height);
-    // getPixels liefert nur den belegten Bereich – auf den angefragten Ausschnitt legen
+    // getPixels only returns the occupied area – place it on the requested region
     for (let y = 0; y < id.height; y++) for (let x = 0; x < id.width; x++) {
       const tx = sb.left - sourceBounds.left + x, ty = sb.top - sourceBounds.top + y;
       if (tx < 0 || ty < 0 || tx >= W || ty >= H) continue;
@@ -257,7 +258,7 @@ async function readLayer(ctx, doc, layer, sourceBounds, inHistory) {
       const md = mr.imageData, mraw = to8bit(await md.getData({ chunky: true }), md.componentSize || 8);
       const mb = mr.sourceBounds || sourceBounds, mw = md.width, mh = md.height;
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-        // außerhalb der gelieferten Maske gilt ihr Randwert
+        // outside the returned mask its edge value applies
         const mx = Math.max(0, Math.min(mw - 1, sourceBounds.left + x - mb.left)), my = Math.max(0, Math.min(mh - 1, sourceBounds.top + y - mb.top));
         const i = (y * W + x) * 4;
         rgba[i + 3] = rgba[i + 3] * mraw[(my * mw + mx) * md.components] / 255;
@@ -269,7 +270,7 @@ async function readLayer(ctx, doc, layer, sourceBounds, inHistory) {
     if (wasHidden) { layer.visible = false; if (hid !== null) await ctx.hostControl.resumeHistory(hid, false); }
   }
 }
-// Verkleinert ein RGBA-Bild (Box-Mittel, Alpha-gewichtet) auf ein Raster mit ps Quell-Pixeln je Pixel
+// Downsamples an RGBA image (box average, alpha-weighted) to a grid of ps source pixels per pixel
 function downsample(src, sw, sh, ox, oy, w, h, ps) {
   const out = new Uint8Array(w * h * 4);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
@@ -288,7 +289,7 @@ function downsample(src, sw, sh, ox, oy, w, h, ps) {
   return out;
 }
 
-// ---------------------------------------------------------------- Bedienelemente (Morgenstern-Design, ms-ui.js)
+// ---------------------------------------------------------------- Controls (Morgenstern design, ms-ui.js)
 function buildSliders() {
   for (const s of SLIDERS) {
     const c = UI.slider($(s.parent), Object.assign({ def: Core.DEFAULTS[s.key] }, s), {
@@ -304,7 +305,7 @@ function buildStatic() {
   UI.seg($("maskSeg"), Core.MASKS.map((m) => ({ id: m.id, name: m.name })), (v) => { params.mask = v; activeLook = null; syncUI(); changed(); });
   UI.seg($("osdSeg"), Core.OSDS.map((o) => ({ id: o.id, name: o.name })), (v) => {
     params.osd = v; activeLook = null; syncUI(); changed();
-    if (params.osd !== "none" && target === "layers") setStatus("Einblendungen erscheinen nur bei „Ganzes Dokument“.");
+    if (params.osd !== "none" && target === "layers") setStatus("Overlays only appear with \"Whole document\".");
   });
   $("gradPresets").innerHTML = Core.GRADIENTS.map((g, i) => `<div class="grad" data-grad="${i}" title="${g.name}"><div style="background-color:${g.low}"></div><div style="background-color:${g.mid}"></div><div style="background-color:${g.high}"></div></div>`).join("");
   const grid = $("lookGrid");
@@ -320,11 +321,11 @@ function buildStatic() {
   }
   rebuildPresetSelect();
 }
-// eigene Presets als Liste: Klick lädt, × löscht
+// own presets as a list: click loads, × deletes
 function rebuildPresetSelect() {
   UI.presetList($("presetList"), Object.keys(loadUserPresets()),
-    (n) => { params = Core.sanitize(loadUserPresets()[n]); activeLook = null; syncUI(); changed(); setStatus(`Preset „${n}“ geladen.`); },
-    (n) => { const u = loadUserPresets(); delete u[n]; saveUserPresets(u); rebuildPresetSelect(); setStatus(`Preset „${n}“ gelöscht.`); });
+    (n) => { params = Core.sanitize(loadUserPresets()[n]); activeLook = null; syncUI(); changed(); setStatus(`Preset "${n}" loaded.`); },
+    (n) => { const u = loadUserPresets(); delete u[n]; saveUserPresets(u); rebuildPresetSelect(); setStatus(`Preset "${n}" deleted.`); });
 }
 function applyLook(id) {
   const pr = Core.presetParams(id);
@@ -332,7 +333,7 @@ function applyLook(id) {
   params = Object.assign(pr, { strength: params.strength });
   activeLook = id;
   syncUI(); changed();
-  setStatus(`Look „${Core.PRESETS.find((x) => x.id === id).name}“ – alle Regler bleiben frei einstellbar.`);
+  setStatus(`Look "${Core.PRESETS.find((x) => x.id === id).name}" – every slider stays adjustable.`);
 }
 
 function syncUI() {
@@ -358,7 +359,7 @@ function syncUI() {
   if (document.activeElement !== $("osdText")) $("osdText").value = params.osdText;
   $("seed").value = String(params.seed);
   UI.syncSwitches();
-  $("apply").textContent = target === "document" ? "Anwenden" : "Auf Ebene anwenden";
+  $("apply").textContent = target === "document" ? "Apply" : "Apply to layer";
 }
 
 const SEC_KEY = "msphase.sections.v1";
@@ -369,7 +370,7 @@ function bindControls() {
   UI.bindSwitch("liveCanvas", (on) => {
     liveLast = null;
     if (on) applyEffect(true);
-    else setStatus("Live aus – der aktuelle Stand bleibt im Dokument.");
+    else setStatus("Live off – the current state stays in the document.");
   });
   document.querySelectorAll("#colorSeg .seg-btn").forEach((el) => el.addEventListener("click", () => { params.colorMode = el.dataset.color; activeLook = null; syncUI(); changed(); }));
   document.querySelectorAll("#targetSeg .seg-btn").forEach((el) => el.addEventListener("click", () => {
@@ -387,10 +388,10 @@ function bindControls() {
   $("refreshPreview").addEventListener("click", () => { previewSrc = null; refreshPreviewSource(); });
   $("presetSave").addEventListener("click", () => {
     const name = String($("presetName").value || "").trim();
-    if (!name) return setStatus("Gib dem Preset zuerst einen Namen.", true);
+    if (!name) return setStatus("Give the preset a name first.", true);
     const user = loadUserPresets(); user[name] = Object.assign({}, params); saveUserPresets(user);
     rebuildPresetSelect(); $("presetName").value = "";
-    setStatus(`Preset „${name}“ gespeichert.`);
+    setStatus(`Preset "${name}" saved.`);
   });
   $("resetAll").addEventListener("click", () => { params = Object.assign({}, Core.DEFAULTS); activeLook = "phase"; syncUI(); changed(); });
   $("apply").addEventListener("click", () => applyEffect(false));
@@ -399,7 +400,7 @@ function bindControls() {
   $("selfTest").addEventListener("click", runSelfTest);
 }
 
-// Farbfelder: [Element-ID, Parameter] – eigenes Popover, Photoshops Farbwähler nur über „Exakt wählen…“
+// colour fields: [element ID, parameter] – own popover, Photoshop's colour picker only via "Pick exactly…"
 const COLOR_FIELDS = [["tint", "tint"], ["tint2", "tint"], ["tintLow", "tintLow"], ["tintHigh", "tintHigh"], ["osdColor", "osdColor"]];
 const PHASE_PALETTE = Core.TINTS.map((t) => String(t.id).toLowerCase()).concat(UI.PALETTE).filter((c, i, a) => a.indexOf(c) === i);
 function openColor(id, key) {
@@ -416,10 +417,10 @@ async function pickColor(key) {
     let res;
     await core.executeAsModal(async () => {
       res = await batchPlay([{ _obj: "showColorPicker", _target: { _ref: "application" }, context: "MS Phase", color: { _obj: "RGBColor", red: c0.r, grain: c0.g, blue: c0.b } }], {});
-    }, { commandName: "Farbe wählen" });
+    }, { commandName: "Pick colour" });
     const c = res && res[0] && (res[0].RGBFloatColor || res[0].color);
     if (c && c.red !== undefined) { params[key] = rgbToHex(c.red, c.grain !== undefined ? c.grain : c.green, c.blue); activeLook = null; syncUI(); changed(); }
-  } catch (e) { setStatus("Farbwähler nicht verfügbar – Hex-Wert eintippen.", true); }
+  } catch (e) { setStatus("Colour picker not available – type a hex value.", true); }
 }
 
 const debouncedPreview = debounce(() => renderPreview(), 60);
@@ -435,11 +436,11 @@ function showSyncHint() {
   const applied = key && lastApplied.get(key);
   if (!applied) return;
   const diff = Object.keys(Core.DEFAULTS).filter((k) => JSON.stringify(applied[k]) !== JSON.stringify(params[k]));
-  if (diff.length) setStatus(`● Noch nicht im Dokument – „${$("apply").textContent}“ klicken oder Live einschalten.`);
-  else setStatus("Dokument entspricht den Einstellungen.");
+  if (diff.length) setStatus(`● Not in the document yet – click "${$("apply").textContent}" or turn on Live.`);
+  else setStatus("Document matches the settings.");
 }
 
-// ---------------------------------------------------------------- Vorschau
+// ---------------------------------------------------------------- Preview
 const PV_W = 300, PV_H = 170, TH_W = 96, TH_H = 54;
 const GRAY = 26;
 function sizeFit(w, h, mw, mh) { const f = Math.min(1, mw / w, mh / h); return { width: Math.max(1, Math.round(w * f)), height: Math.max(1, Math.round(h * f)) }; }
@@ -456,37 +457,37 @@ function flatRGB(n, v) { const o = new Uint8Array(n * 3); o.fill(v); return o; }
 async function refreshPreviewSource() {
   if (busy) return;
   const doc = app.activeDocument;
-  if (!doc) { previewSrc = null; showTarget(null); return renderPreview("Kein Dokument geöffnet."); }
+  if (!doc) { previewSrc = null; showTarget(null); return renderPreview("No document open."); }
   const dB = docBounds(doc), dw = dB.right, dh = dB.bottom;
   let info = null;
   if (target === "document") {
     const g = docGroups(doc)[0];
     if (g) info = await groupInfo(g);
-    showTarget(doc.name || "Dokument");
+    showTarget(doc.name || "Document");
   } else {
     const r = await resolveTargets(doc);
     if (!r.targets.length) {
       previewSrc = null; showTarget(null);
-      return renderPreview(r.skipped.length ? "Gruppen und den Hintergrund bitte über „Ganzes Dokument“ bearbeiten." : "Wähle in der Ebenen-Palette eine Ebene (Bild, Text, Form)…");
+      return renderPreview(r.skipped.length ? "Edit groups and the background with \"Whole document\"." : "Select a layer in the Layers panel (image, text, shape)…");
     }
     info = r.targets[0];
     showTarget(info.source.name + (r.targets.length > 1 ? ` (+${r.targets.length - 1} weitere)` : ""));
   }
-  // Einstellungen einer bestehenden Gruppe übernehmen (nur beim Wechsel der Gruppe – offene Änderungen bleiben)
+  // Take over the settings of an existing group (only when the group changes – open edits stay)
   if (info && info.group && info.saved) {
     if (loadedKey !== info.group.id) {
       loadedKey = info.group.id;
       params = Core.sanitize(info.saved.params); activeLook = null;
       lastApplied.set(targetKey(doc, info), Object.assign({}, params));
       saveParams(); syncUI();
-      setStatus(`Einstellungen aus „${info.group.name}“ geladen.`);
+      setStatus(`Settings loaded from "${info.group.name}".`);
     }
   } else loadedKey = null;
-  // Zielbereich: Dokument oder die Ebene; die Vorschau zeigt immer das Dokument
+  // Target area: document or the layer; the preview always shows the document
   const lb = target === "document" ? dB : layerRegion(doc, info.source);
   const fw = lb.right - lb.left, fh = lb.bottom - lb.top;
   const ob = target === "document" ? dB : boundsOf(info.source);
-  if (fw <= 0 || fh <= 0 || ob.right <= ob.left || ob.bottom <= ob.top) { previewSrc = null; return renderPreview("Die Ebene ist leer."); }
+  if (fw <= 0 || fh <= 0 || ob.right <= ob.left || ob.bottom <= ob.top) { previewSrc = null; return renderPreview("The layer is empty."); }
   let view = dB, ts = sizeFit(dw, dh, PV_W, PV_H);
   if (previewMode === "detail") {
     const w = Math.min(dw, PV_W), h = Math.min(dh, PV_H);
@@ -498,12 +499,12 @@ async function refreshPreviewSource() {
   try {
     let pv = null, th = null, lay = null;
     await core.executeAsModal(async (ctx) => {
-      // im Ebenen-Modus: Dokument mit dem Original, aber ohne alte TV-Ebenen dieses Objekts
+      // in layer mode: document with the original, but without this object's old effect layers
       const opt = target === "layers" && info.group ? { hide: Array.from(info.group.layers).filter((k) => k.id !== info.source.id), show: [info.source] } : {};
       pv = await readComposite(ctx, doc, view, ts, opt);
       th = await readComposite(ctx, doc, dB, tts, opt);
       if (target === "layers") lay = await readLayer(ctx, doc, info.source, lb, false);
-    }, { commandName: HIST + " Vorschau" });
+    }, { commandName: HIST + " preview" });
     ignoreEventsUntil = Date.now() + 600;
     const mk = (c, v, ps) => {
       const n = c.w * c.h, original = rgbOf(c.rgba, n, null);
@@ -522,15 +523,15 @@ async function refreshPreviewSource() {
     if (newThumbs) renderThumbs();
   } catch (e) {
     previewSrc = null;
-    renderPreview("Vorschau nicht möglich: " + (e.message || e));
+    renderPreview("Preview not possible: " + (e.message || e));
   }
 }
-// zeigt unter der Vorschau, was gerade bearbeitet wird
+// shows below the preview what is being edited
 function showTarget(name) {
-  $("targetName").textContent = name ? (target === "document" ? "Ganzes Dokument" : "Ebene: " + name) : "–";
+  $("targetName").textContent = name ? (target === "document" ? "Whole document" : "Layer: " + name) : "–";
   $("targetInfo").innerHTML = target === "document"
-    ? `Bearbeitet wird: <b>das ganze Dokument</b>${name ? " · " + esc(name) : ""}`
-    : name ? `Bearbeitet wird nur: <b>${esc(name)}</b>` : `Bearbeitet wird nur: <b>die ausgewählte Ebene</b> – bitte eine auswählen`;
+    ? `Editing: <b>the whole document</b>${name ? " · " + esc(name) : ""}`
+    : name ? `Editing only: <b>${esc(name)}</b>` : `Editing only: <b>the selected layer</b> – please select one`;
 }
 function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function targetKey(doc, info) { return target === "document" ? "doc:" + doc.id : "layer:" + doc.id + ":" + (info && info.source ? info.source.id : "?"); }
@@ -543,20 +544,20 @@ function renderOn(s, p) {
 let previewToken = 0;
 async function renderPreview(msg) {
   const img = $("preview"), m = $("previewMsg");
-  if (msg || !previewSrc) { img.className = "hidden"; m.className = "preview-msg"; m.textContent = msg || "Dokument öffnen…"; return; }
+  if (msg || !previewSrc) { img.className = "hidden"; m.className = "preview-msg"; m.textContent = msg || "Open a document…"; return; }
   const token = ++previewToken, s = previewSrc;
   const rgb = $("previewOriginal").checked ? s.original : renderOn(s, params);
   try {
     const url = await encodeRGB(rgb, s.w, s.h);
     if (token !== previewToken) return;
     img.src = url; img.className = ""; m.className = "hidden";
-  } catch (e) { img.className = "hidden"; m.className = "preview-msg"; m.textContent = "Vorschau benötigt Photoshop 24.2 oder neuer."; }
+  } catch (e) { img.className = "hidden"; m.className = "preview-msg"; m.textContent = "The preview needs Photoshop 24.2 or newer."; }
 }
 async function encodeRGB(rgb, w, h) {
   const d = await imaging.createImageDataFromBuffer(rgb, { width: w, height: h, components: 3, chunky: true, colorSpace: "RGB", colorProfile: "sRGB IEC61966-2.1" });
   try { return "data:image/jpeg;base64," + await imaging.encodeImageData({ imageData: d, base64: true }); } finally { d.dispose(); }
 }
-// Look-Galerie mit dem eigenen Motiv
+// Look gallery with your own image
 let thumbToken = 0;
 async function renderThumbs() {
   const token = ++thumbToken, s = thumbSrc;
@@ -570,12 +571,12 @@ async function renderThumbs() {
         const img = document.createElement("img"); img.src = url;
         tile.replaceChild(img, tile.firstChild);
       }
-    } catch (e) { log("Thumb-Fehler", String(e.message || e)); return; }
+    } catch (e) { log("thumb error", String(e.message || e)); return; }
     await sleep(0);
   }
 }
 
-// ---------------------------------------------------------------- Anwenden
+// ---------------------------------------------------------------- Apply
 async function makePixelLayer(doc, name, buf, w, h, off, mode, opacity) {
   await batchPlay([{ _obj: "make", _target: [{ _ref: "layer" }], using: { _obj: "layer", name } }], {});
   const layer = doc.activeLayers[0];
@@ -585,16 +586,16 @@ async function makePixelLayer(doc, name, buf, w, h, off, mode, opacity) {
   await batchPlay([{ _obj: "set", _target: TARGET, to: { _obj: "layer", mode: { _enum: "blendMode", _value: mode }, opacity: { _unit: "percentUnit", _value: opacity } } }], {});
   return layer.id;
 }
-// Deckkraft einer TV-Ebene. Ganzes Dokument: Gesamt-Deckkraft sitzt an der Gruppe. Ebene: das Original liegt
-// sichtbar unter dem Signal – die Gesamt-Deckkraft sitzt am Signal (mit allem, was darauf geschnitten ist) und
-// am Leuchten, so mischt sie den Effekt mit dem Original statt das Objekt verblassen zu lassen.
+// Opacity of a TV layer. Whole document: the overall opacity sits on the group. Layer: the original lies
+// visible below the signal – the overall opacity sits on the signal (with everything clipped to it) and
+// on the bloom, so it mixes the effect with the original instead of fading the object.
 function layerOpacity(def, p, layerMode) {
   if (!layerMode) return def.opacity(p);
   if (def.key === "signal") return p.strength;
   if (def.key === "bloom") return Math.round(p.bloom * p.strength / 100);
   return def.opacity(p);
 }
-// Legt die Ebenen von unten nach oben über der aktiven Ebene an; jede wird einzeln berechnet (wenig Speicher)
+// Creates the layers bottom to top above the active layer; each is computed on its own (little memory)
 async function makeTvLayers(doc, o, off) {
   const p = Core.sanitize(o.params), made = [];
   const signal = Core.renderSignal(o);
@@ -617,33 +618,33 @@ async function deleteDocGroups(doc) { for (const g of docGroups(doc)) await dele
 async function applyDocument(ctx, doc, p) {
   await deleteDocGroups(doc);
   const b = docBounds(doc);
-  if (b.right * b.bottom > MAX_PIXELS) throw new Error(`Dokument zu groß (${Math.round(b.right * b.bottom / 1e6)} MP, maximal ${MAX_PIXELS / 1e6} MP).`);
+  if (b.right * b.bottom > MAX_PIXELS) throw new Error(`Document too large (${Math.round(b.right * b.bottom / 1e6)} MP, maximum ${MAX_PIXELS / 1e6} MP).`);
   const c = await readComposite(ctx, doc, b, null);
   if (doc.layers[0]) await selectLayer(doc.layers[0].id);
   const made = await makeTvLayers(doc, { rgba: c.rgba, w: c.w, h: c.h, params: p, opaque: true }, { left: 0, top: 0 });
   await selectLayers(made.map((m) => m.id));
   await batchPlay([{ _obj: "make", _target: [{ _ref: "layerSection" }], from: { _ref: "layer", _enum: "ordinal", _value: "targetEnum" }, name: GROUP_DOC }], {});
   await batchPlay([{ _obj: "set", _target: TARGET, to: { _obj: "layer", name: GROUP_DOC } }], {});
-  // war oben eine (aufgeklappte) Gruppe ausgewählt, landet die neue Gruppe darin – ganz nach oben holen
+  // if an (expanded) group was selected on top, the new group lands inside it – move it to the very top
   const made0 = doc.activeLayers[0];
   if (made0 && made0.parent && doc.layers[0] && doc.layers[0].id !== made0.id) await made0.move(doc.layers[0], constants.ElementPlacement.PLACEBEFORE);
   const g = docGroups(doc)[0];
-  if (g) { g.opacity = p.strength; loadedKey = g.id; }   // Deckkraft per batchPlay auf eine frische Gruppe würde ignoriert
+  if (g) { g.opacity = p.strength; loadedKey = g.id; }   // opacity via batchPlay on a fresh group would be ignored
   const sig = made.find((m) => m.def.key === "signal");
   if (sig) await writeXmp(sig.id, p, null);
   lastApplied.set("doc:" + doc.id, Object.assign({}, p));
-  log("  Dokument", { ebenen: made.map((m) => m.def.name), w: c.w, h: c.h });
+  log("  document", { layers: made.map((m) => m.def.name), w: c.w, h: c.h });
 }
 
 async function applyLayer(ctx, doc, t, p) {
   const src = t.source;
   if (t.group) for (const k of Array.from(t.group.layers)) if (k.id !== src.id) await deleteDeep(k);
   const sb0 = boundsOf(src);
-  if (sb0.right <= sb0.left || sb0.bottom <= sb0.top) throw new Error(`„${src.name}“ ist leer.`);
+  if (sb0.right <= sb0.left || sb0.bottom <= sb0.top) throw new Error(`"${src.name}" is empty.`);
   const b = layerRegion(doc, src);
   const w = b.right - b.left, h = b.bottom - b.top;
-  if (w * h > MAX_PIXELS) throw new Error(`„${src.name}“ ist zu groß.`);
-  if (!src.visible) src.visible = true;   // Original liegt sichtbar unter dem Signal (auch bei Gruppen aus 0.1)
+  if (w * h > MAX_PIXELS) throw new Error(`"${src.name}" is too large.`);
+  if (!src.visible) src.visible = true;   // the original lies visible below the signal (also for groups from 0.1)
   const px = await readLayer(ctx, doc, src, b, true);
   await selectLayer(src.id);
   const made = await makeTvLayers(doc, { rgba: px.rgba, w, h, params: p, opaque: false, lineBase: docBounds(doc).bottom }, b);
@@ -662,7 +663,7 @@ async function applyLayer(ctx, doc, t, p) {
   await selectLayer(group.id);
   lastApplied.set("layer:" + doc.id + ":" + src.id, Object.assign({}, p));
   loadedKey = group.id;
-  log("  Ebene", { quelle: src.name, ebenen: made.map((m) => m.def.name), w, h });
+  log("  layer", { source: src.name, layers: made.map((m) => m.def.name), w, h });
   return group;
 }
 
@@ -674,16 +675,16 @@ async function applyEffect(live) {
   live = live === true;
   if (busy) {
     if (live) { livePending = true; return; }
-    if (!(await idleWithin(6000))) return setStatus("Photoshop ist noch beschäftigt – gleich nochmal versuchen.", true);
+    if (!(await idleWithin(6000))) return setStatus("Photoshop is still busy – try again in a moment.", true);
   }
   const doc = app.activeDocument;
-  if (!doc) return setStatus("Kein Dokument geöffnet.", true);
+  if (!doc) return setStatus("No document open.", true);
   if (needsRGB(doc)) return;
   let targets = null;
   if (target === "layers") {
     const r = await resolveTargets(doc);
     targets = r.targets;
-    if (!targets.length) return setStatus(r.skipped.length ? "Gruppen und den Hintergrund bitte über „Ganzes Dokument“ bearbeiten." : "Wähle zuerst eine oder mehrere Ebenen aus.", true);
+    if (!targets.length) return setStatus(r.skipped.length ? "Edit groups and the background with \"Whole document\"." : "Select one or more layers first.", true);
   }
   busy = true;
   setStatus(live ? "Live-Update…" : "Erzeuge Look…");
@@ -692,7 +693,7 @@ async function applyEffect(live) {
   const key = target === "document" ? "doc" : targets.map((t) => t.source.id).join(",");
   const replaceLast = live && liveLast && liveLast.docId === doc.id && liveLast.key === key && liveLast.stateId !== null && liveLast.stateId === historyStateId(doc);
   const p = Core.sanitize(params);
-  log(live ? "LIVE" : "ANWENDEN", { ziel: target, ersetzt: !!replaceLast, params: p });
+  log(live ? "LIVE" : "APPLY", { target: target, replaced: !!replaceLast, params: p });
   try {
     await core.executeAsModal(async (ctx) => {
       if (replaceLast) await batchPlay([{ _obj: "select", _target: [{ _ref: "historyState", _enum: "ordinal", _value: "previous" }] }], {});
@@ -700,60 +701,60 @@ async function applyEffect(live) {
       try {
         if (target === "document") await applyDocument(ctx, doc, p);
         else {
-          // nach einem Live-Rückschritt sind die Ebenen-Objekte neu – Ziele frisch auflösen
+          // after a Live undo the layer objects are new – resolve the targets again
           const list = replaceLast ? (await resolveTargets(doc)).targets : targets;
           const groups = [];
           for (const t of list) groups.push(await applyLayer(ctx, doc, t, p));
           if (groups.length > 1) await selectLayers(groups.map((g) => g.id));
         }
       } catch (e) {
-        await ctx.hostControl.resumeHistory(hid, false);   // Fehler: alles zurückrollen, nichts Halbfertiges bleibt liegen
+        await ctx.hostControl.resumeHistory(hid, false);   // error: roll everything back, nothing half-done stays behind
         throw e;
       }
       await ctx.hostControl.resumeHistory(hid);
-    }, { commandName: HIST + " anwenden" });
+    }, { commandName: HIST + " apply" });
   } catch (e) { error = e.message || String(e); }
   liveLast = live && !error ? { docId: doc.id, key, stateId: historyStateId(doc) } : null;
-  log("  Ergebnis", { fehler: error, ms: Date.now() - t0 });
+  log("  result", { error, ms: Date.now() - t0 });
   ignoreEventsUntil = Date.now() + 700;
   busy = false;
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
-  if (error) setStatus("Fehler: " + error, true);
-  else if (!live) setStatus(target === "document" ? `Fertig in ${secs}s – Gruppe „${GROUP_DOC}“ liegt oben. Rückgängig mit ⌘Z.` : `Fertig in ${secs}s – ${targets.length} Ebene(n) in MS-Phase-Gruppen. Entfernen stellt die Originale wieder her.`);
-  else setStatus(`Live aktualisiert (${secs}s).`);
+  if (error) setStatus("Error: " + error, true);
+  else if (!live) setStatus(target === "document" ? `Done in ${secs}s – group "${GROUP_DOC}" is on top. Undo with ⌘Z.` : `Done in ${secs}s – ${targets.length} layer(s) in ${HIST} groups. Remove restores the originals.`);
+  else setStatus(`Live updated (${secs}s).`);
   if (livePending && $("liveCanvas").checked) { livePending = false; applyEffect(true); }
 }
 const debouncedLive = debounce(() => applyEffect(true), 250);
 
 async function removeEffect() {
-  if (busy && !(await idleWithin(6000))) return setStatus("Photoshop ist noch beschäftigt – gleich nochmal versuchen.", true);
+  if (busy && !(await idleWithin(6000))) return setStatus("Photoshop is still busy – try again in a moment.", true);
   const doc = app.activeDocument;
-  if (!doc) return setStatus("Kein Dokument geöffnet.", true);
+  if (!doc) return setStatus("No document open.", true);
   let list = [];
   if (target === "layers") {
     list = (await resolveTargets(doc)).targets.filter((t) => t.group);
-    if (!list.length) return setStatus("Wähle eine MS-Phase-Gruppe (oder eine Ebene darin) aus.", true);
-  } else if (!docGroups(doc).length) return setStatus(`Keine Gruppe „${GROUP_DOC}“ im Dokument.`, true);
+    if (!list.length) return setStatus(`Select a ${HIST} group (or a layer inside it).`, true);
+  } else if (!docGroups(doc).length) return setStatus(`No group "${GROUP_DOC}" in the document.`, true);
   busy = true;
   try {
     await core.executeAsModal(async (ctx) => {
-      const hid = await ctx.hostControl.suspendHistory({ documentID: doc.id, name: HIST + " entfernen" });
+      const hid = await ctx.hostControl.suspendHistory({ documentID: doc.id, name: HIST + " remove" });
       try {
         if (target === "document") await deleteDocGroups(doc);
         else for (const t of list) await unwrap(t);
       } catch (e) { await ctx.hostControl.resumeHistory(hid, false); throw e; }
       await ctx.hostControl.resumeHistory(hid);
-    }, { commandName: HIST + " entfernen" });
+    }, { commandName: HIST + " remove" });
     for (const t of list) lastApplied.delete("layer:" + doc.id + ":" + t.source.id);
     if (target === "document") lastApplied.delete("doc:" + doc.id);
     loadedKey = null;
-    log("ENTFERNEN", { ziel: target, gruppen: list.length });
-    setStatus(target === "document" ? `Gruppe „${GROUP_DOC}“ entfernt.` : `${list.length} Original(e) wiederhergestellt.`);
-  } catch (e) { setStatus("Fehler beim Entfernen: " + (e.message || e), true); }
+    log("REMOVE", { target: target, groups: list.length });
+    setStatus(target === "document" ? `Group "${GROUP_DOC}" removed.` : `${list.length} original(s) restored.`);
+  } catch (e) { setStatus("Error while removing: " + (e.message || e), true); }
   ignoreEventsUntil = Date.now() + 700;
   busy = false;
 }
-// Gruppe auflösen: TV-Ebenen löschen, Original sichtbar an derselben Stelle
+// Dissolve the group: delete the effect layers, original visible in the same place
 async function unwrap(t) {
   for (const k of Array.from(t.group.layers)) if (k.id !== t.source.id) await deleteDeep(k);
   await selectLayer(t.group.id);
@@ -762,7 +763,7 @@ async function unwrap(t) {
   await selectLayer(t.source.id);
 }
 
-// ---------------------------------------------------------------- Prüfen
+// ---------------------------------------------------------------- Verify
 async function readLayerRGBA(doc, layerId, b) {
   const r = await imaging.getPixels({ documentID: doc.id, layerID: layerId, sourceBounds: b, colorSpace: "RGB", componentSize: 8 });
   const d = r.imageData, raw = to8bit(await d.getData({ chunky: true }), d.componentSize || 8);
@@ -776,7 +777,7 @@ async function readLayerRGBA(doc, layerId, b) {
   d.dispose();
   return out;
 }
-// Anteil (in %) der Pixel, die deutlich abweichen (Farbe nur dort, wo das Signal sichtbar ist)
+// Share (in %) of pixels that differ clearly (colour only where the signal is visible)
 function pixelDiff(exp, act) {
   let big = 0, n = 0;
   for (let i = 0; i < exp.length; i += 4) {
@@ -796,46 +797,46 @@ async function checkGroup(doc, g, o, b, sourceId) {
   const fail = [], p = Core.sanitize(o.params), kids = Array.from(g.layers);
   const exp = expectedLayers(o);
   const names = kids.filter((k) => k.id !== sourceId).map((k) => k.name), want = exp.defs.map((d) => d.name);
-  if (JSON.stringify(names) !== JSON.stringify(want)) fail.push(`Ebenen ${names.join("/")} statt ${want.join("/")}`);
+  if (JSON.stringify(names) !== JSON.stringify(want)) fail.push(`layers ${names.join("/")} instead of ${want.join("/")}`);
   const gOp = sourceId ? 100 : p.strength;
-  if (Math.abs(Number(g.opacity) - gOp) > 1) fail.push(`Gruppen-Deckkraft ${g.opacity} statt ${gOp}`);
+  if (Math.abs(Number(g.opacity) - gOp) > 1) fail.push(`group opacity ${g.opacity} instead of ${gOp}`);
   for (const d of exp.defs) {
     const l = kids.find((k) => k.name === d.name);
     if (!l) continue;
     const mode = String(l.blendMode || "").replace(/^BlendMode\./, "").toLowerCase();
-    if (mode !== d.mode.toLowerCase()) fail.push(`${d.name}: Mischmodus ${mode} statt ${d.mode}`);
+    if (mode !== d.mode.toLowerCase()) fail.push(`${d.name}: blend mode ${mode} instead of ${d.mode}`);
     const op = layerOpacity(d, p, !!sourceId);
-    if (Math.abs(Number(l.opacity) - op) > 1) fail.push(`${d.name}: Deckkraft ${l.opacity} statt ${op}`);
-    if (sourceId && d.clip !== !!l.isClippingMask) fail.push(`${d.name}: Schnittmaske ${!!l.isClippingMask}`);
+    if (Math.abs(Number(l.opacity) - op) > 1) fail.push(`${d.name}: opacity ${l.opacity} instead of ${op}`);
+    if (sourceId && d.clip !== !!l.isClippingMask) fail.push(`${d.name}: clipping mask ${!!l.isClippingMask}`);
   }
   const sigL = kids.find((k) => k.name === "Signal");
   let diff = null;
   if (sigL) { diff = pixelDiff(exp.signal, await readLayerRGBA(doc, sigL.id, b)); if (diff > 1) fail.push(`Signal: ${diff}% Pixel anders`); }
   const saved = sigL ? await readXmp(sigL.id) : null;
-  if (!saved || JSON.stringify(saved.params) !== JSON.stringify(p)) fail.push("Einstellungen im XMP fehlen/abweichend");
-  if (sourceId && (!saved || saved.sourceId !== sourceId)) fail.push("Original-ID im XMP falsch");
+  if (!saved || JSON.stringify(saved.params) !== JSON.stringify(p)) fail.push("settings in XMP missing/different");
+  if (sourceId && (!saved || saved.sourceId !== sourceId)) fail.push("original ID in XMP wrong");
   return { fail, diff };
 }
 async function verifyDocument(ctx, doc, p) {
-  const r = { fehler: [] }, groups = docGroups(doc);
-  if (groups.length !== 1) { r.fehler.push(groups.length ? "mehrere Gruppen" : "Gruppe fehlt"); r.ok = false; return r; }
-  if (doc.layers[0].id !== groups[0].id) r.fehler.push("Gruppe nicht ganz oben");
+  const r = { errors: [] }, groups = docGroups(doc);
+  if (groups.length !== 1) { r.errors.push(groups.length ? "several groups" : "group missing"); r.ok = false; return r; }
+  if (doc.layers[0].id !== groups[0].id) r.errors.push("group not on top");
   const b = docBounds(doc), c = await readComposite(ctx, doc, b, null);
   const cg = await checkGroup(doc, groups[0], { rgba: c.rgba, w: c.w, h: c.h, params: p, opaque: true }, b, null);
-  r.fehler = r.fehler.concat(cg.fail); r.abweichung = cg.diff; r.ok = !r.fehler.length;
+  r.errors = r.errors.concat(cg.fail); r.deviation = cg.diff; r.ok = !r.errors.length;
   return r;
 }
 async function verifyLayerTarget(ctx, doc, t, p) {
-  const r = { fehler: [] };
-  if (!t.group) { r.fehler.push(`„${t.source.name}“ ist keiner MS-Phase-Gruppe zugeordnet`); r.ok = false; return r; }
-  if (!t.source.visible) r.fehler.push("Original ist ausgeblendet");
-  if (t.group.name !== LAYER_PREFIX + t.source.name) r.fehler.push(`Gruppenname „${t.group.name}“`);
+  const r = { errors: [] };
+  if (!t.group) { r.errors.push(`"${t.source.name}" belongs to no MS Phase group`); r.ok = false; return r; }
+  if (!t.source.visible) r.errors.push("original is hidden");
+  if (t.group.name !== LAYER_PREFIX + t.source.name) r.errors.push(`group name "${t.group.name}"`);
   const kids = Array.from(t.group.layers);
-  if (kids[kids.length - 1].id !== t.source.id) r.fehler.push("Original liegt nicht ganz unten");
+  if (kids[kids.length - 1].id !== t.source.id) r.errors.push("original is not at the bottom");
   const b = layerRegion(doc, t.source);
   const px = await readLayer(ctx, doc, t.source, b, false);
   const cg = await checkGroup(doc, t.group, { rgba: px.rgba, w: px.w, h: px.h, params: p, opaque: false, lineBase: docBounds(doc).bottom }, b, t.source.id);
-  r.fehler = r.fehler.concat(cg.fail); r.abweichung = cg.diff; r.ok = !r.fehler.length;
+  r.errors = r.errors.concat(cg.fail); r.deviation = cg.diff; r.ok = !r.errors.length;
   return r;
 }
 async function verifyNow(doc, p) {
@@ -844,27 +845,27 @@ async function verifyNow(doc, p) {
     if (target === "document") r = await verifyDocument(ctx, doc, p);
     else {
       const list = (await resolveTargets(doc)).targets;
-      r = { ok: list.length > 0, fehler: list.length ? [] : ["keine Ebene ausgewählt"], ebenen: [] };
-      for (const t of list) { const x = await verifyLayerTarget(ctx, doc, t, p); r.ebenen.push(x); if (!x.ok) { r.ok = false; r.fehler = r.fehler.concat(x.fehler); } }
+      r = { ok: list.length > 0, errors: list.length ? [] : ["no layer selected"], layers: [] };
+      for (const t of list) { const x = await verifyLayerTarget(ctx, doc, t, p); r.layers.push(x); if (!x.ok) { r.ok = false; r.errors = r.errors.concat(x.errors); } }
     }
-  }, { commandName: HIST + " prüfen" });
+  }, { commandName: HIST + " verify" });
   return r;
 }
 async function verifyNowUI() {
   if (busy) return;
   const doc = app.activeDocument;
-  if (!doc) return setStatus("Kein Dokument geöffnet.", true);
+  if (!doc) return setStatus("No document open.", true);
   busy = true;
   let r;
-  try { r = await verifyNow(doc, Core.sanitize(params)); } catch (e) { r = { ok: false, fehler: [e.message || String(e)] }; }
+  try { r = await verifyNow(doc, Core.sanitize(params)); } catch (e) { r = { ok: false, errors: [e.message || String(e)] }; }
   busy = false;
   ignoreEventsUntil = Date.now() + 600;
-  log("PRÜFEN", r);
-  if (r.ok) setStatus("✓ Das Dokument entspricht den aktuellen Einstellungen.");
-  else setStatus("✗ " + r.fehler.join(", ") + " (Details im Log)", true);
+  log("VERIFY", r);
+  if (r.ok) setStatus("✓ The document matches the current settings.");
+  else setStatus("✗ " + r.errors.join(", ") + " (details in the log)", true);
 }
 
-// ---------------------------------------------------------------- Selbsttest
+// ---------------------------------------------------------------- Self-test
 function testArtwork(w, h) {
   const buf = new Uint8Array(w * h * 4);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
@@ -889,13 +890,13 @@ async function runSelfTest() {
   const check = async (name, fn) => {
     try { const r = await fn(); results.push({ test: name, ok: !!r.ok, details: r }); }
     catch (e) { results.push({ test: name, ok: false, details: String(e && e.stack || e) }); }
-    setStatus(`Selbsttest: ${results.length} – ${name}`);
+    setStatus(`Self-test: ${results.length} – ${name}`);
   };
-  log("SELBSTTEST START");
-  setStatus("Selbsttest läuft… (1–2 Minuten, bitte nichts anklicken)");
+  log("SELFTEST START");
+  setStatus("Self-test running… (1–2 minutes, please don't click)");
   try {
     await core.executeAsModal(async () => {
-      doc = await app.documents.add({ width: 900, height: 520, resolution: 72, mode: "RGBColorMode", fill: "white", name: "MS Phase Selbsttest" });
+      doc = await app.documents.add({ width: 900, height: 520, resolution: 72, mode: "RGBColorMode", fill: "white", name: "MS Phase self-test" });
       await batchPlay([{ _obj: "make", _target: [{ _ref: "layer" }], using: { _obj: "layer", name: "Artwork" } }], {});
       const al = doc.activeLayers[0]; artId = al.id;
       const id = await imaging.createImageDataFromBuffer(testArtwork(900, 520), { width: 900, height: 520, components: 4, chunky: true, colorSpace: "RGB", colorProfile: "sRGB IEC61966-2.1" });
@@ -905,7 +906,7 @@ async function runSelfTest() {
         textClickPoint: { _obj: "paint", horizontal: { _unit: "percentUnit", _value: 52 }, vertical: { _unit: "percentUnit", _value: 88 } },
         textStyleRange: [{ _obj: "textStyleRange", from: 0, to: 5, textStyle: { _obj: "textStyle", size: { _unit: "pointsUnit", _value: 110 }, color: { _obj: "RGBColor", red: 250, grain: 250, blue: 250 } } }] } }], {});
       textId = doc.activeLayers[0].id;
-    }, { commandName: HIST + " Selbsttest vorbereiten" });
+    }, { commandName: HIST + " prepare self-test" });
     const D = Object.assign({}, Core.DEFAULTS, { seed: 4242 });
     const docCase = async (name, over) => check(name, async () => {
       target = "document"; params = Core.sanitize(Object.assign({}, D, over));
@@ -915,20 +916,20 @@ async function runSelfTest() {
     });
     for (const pr of Core.PRESETS) await docCase(`Look ${pr.name}`, Object.assign({ seed: 4242 }, pr.p));
     for (const m of Core.MODES) await docCase(`Signal ${m.name}`, { mode: m.id });
-    for (const m of Core.MASKS) await docCase(`Maske ${m.name}`, { mode: "clear", mask: m.id, maskStrength: 70 });
-    await docCase("Farbverlauf", { colorMode: "gradient", tintLow: "#3a0a6b", tint: "#ff3fa4", tintHigh: "#ffe2a8" });
-    await docCase("Abgefilmt: Schräge, Moiré, Reflex", { mode: "clear", tilt: 80, moire: 90, reflection: 70, curvature: 30 });
-    await docCase("Halbbild, Schwingen, Einbrennen", { interlace: 80, wobble: 70, burnIn: 80 });
-    for (const o of Core.OSDS.filter((x) => x.id !== "none")) await docCase(`Einblendung ${o.name}`, { osd: o.id, osdSize: 6 });
-    await docCase("Einblendung mit eigenem Text", { osd: "channel", osdText: "SENDER 7 ▶" });
-    await docCase("Grenzen: 40 Zeilen, alles an", { lines: 40, curvature: 100, corners: 100, vignette: 100, glitch: 100, jitter: 100, noise: 100, rollbar: 100, ghost: 100, rgbShift: 100, dots: 100, tilt: 100, moire: 100, reflection: 100, interlace: 100, wobble: 100, burnIn: 100, osd: "cctv", osdSize: 12 });
-    await docCase("Grenzen: 600 Zeilen, alles aus", { lines: 600, bloom: 0, scanlines: 0, vignette: 0, corners: 0, noise: 0, rgbShift: 0 });
-    await docCase("Gesamt-Deckkraft 30", { strength: 30 });
-    await check("Erneut anwenden ersetzt die Gruppe", async () => {
+    for (const m of Core.MASKS) await docCase(`Mask ${m.name}`, { mode: "clear", mask: m.id, maskStrength: 70 });
+    await docCase("Colour gradient", { colorMode: "gradient", tintLow: "#3a0a6b", tint: "#ff3fa4", tintHigh: "#ffe2a8" });
+    await docCase("Filmed: tilt, moiré, reflex", { mode: "clear", tilt: 80, moire: 90, reflection: 70, curvature: 30 });
+    await docCase("Interlace, wobble, burn-in", { interlace: 80, wobble: 70, burnIn: 80 });
+    for (const o of Core.OSDS.filter((x) => x.id !== "none")) await docCase(`Overlay ${o.name}`, { osd: o.id, osdSize: 6 });
+    await docCase("Overlay with own text", { osd: "channel", osdText: "CHANNEL 7 ▶" });
+    await docCase("Limits: 40 lines, everything on", { lines: 40, curvature: 100, corners: 100, vignette: 100, glitch: 100, jitter: 100, noise: 100, rollbar: 100, ghost: 100, rgbShift: 100, dots: 100, tilt: 100, moire: 100, reflection: 100, interlace: 100, wobble: 100, burnIn: 100, osd: "cctv", osdSize: 12 });
+    await docCase("Limits: 600 lines, everything off", { lines: 600, bloom: 0, scanlines: 0, vignette: 0, corners: 0, noise: 0, rgbShift: 0 });
+    await docCase("Overall opacity 30", { strength: 30 });
+    await check("Applying again replaces the group", async () => {
       await applyEffect(false); await applyEffect(false);
-      return { ok: docGroups(doc).length === 1, gruppen: docGroups(doc).length };
+      return { ok: docGroups(doc).length === 1, groups: docGroups(doc).length };
     });
-    await check("Live: mehrere Updates = ein Protokollschritt", async () => {
+    await check("Live: several updates = one history step", async () => {
       liveLast = null;
       const s0 = historyStateId(doc);
       params = Core.sanitize(Object.assign({}, D, { mode: "straight" })); await applyEffect(true);
@@ -940,41 +941,41 @@ async function runSelfTest() {
       return { ok: before === s0 && states[ai].name === HIST + " Live" && v.ok, s0, before, v };
     });
     liveLast = null;
-    await check("Gruppe auswählen lädt ihre Einstellungen", async () => {
+    await check("Selecting the group loads its settings", async () => {
       const want = Object.assign({}, params);
       params = Object.assign({}, D, { lines: 99 }); loadedKey = null;
       await refreshPreviewSource();
       return { ok: JSON.stringify(params) === JSON.stringify(want), lines: params.lines };
     });
-    await check("Entfernen (Dokument) hinterlässt nichts", async () => {
+    await check("Remove (document) leaves nothing", async () => {
       await removeEffect();
-      return { ok: docGroups(doc).length === 0 && doc.layers.length === 3, ebenen: doc.layers.map((l) => l.name) };
+      return { ok: docGroups(doc).length === 0 && doc.layers.length === 3, layers: doc.layers.map((l) => l.name) };
     });
-    // ---- Ebenen
+    // ---- layers
     const layerCase = async (name, ids, over) => check(name, async () => {
       target = "layers"; params = Core.sanitize(Object.assign({}, D, over));
-      await core.executeAsModal(async () => { await selectLayers(ids); }, { commandName: HIST + " Test" });
+      await core.executeAsModal(async () => { await selectLayers(ids); }, { commandName: HIST + " test" });
       await applyEffect(false);
       return verifyNow(doc, params);
     });
-    await layerCase("Ebene: Text", [textId], { mode: "wave", reflection: 50, osd: "play" });
-    await layerCase("Ebene: Text erneut (über die Gruppe)", [textId], { mode: "clear", mask: "aperture", maskStrength: 80, curvature: 40, corners: 30 });
-    await check("Ebene: genau eine Gruppe, Original sichtbar darunter", async () => {
+    await layerCase("Layer: text", [textId], { mode: "wave", reflection: 50, osd: "play" });
+    await layerCase("Layer: text again (via the group)", [textId], { mode: "clear", mask: "aperture", maskStrength: 80, curvature: 40, corners: 30 });
+    await check("Layer: exactly one group, original visible below", async () => {
       const gs = doc.layers.filter(isLayerGroup);
       const t = gs[0] && await groupInfo(gs[0]);
-      return { ok: gs.length === 1 && !!t && t.source.id === textId && t.source.visible, gruppen: gs.length };
+      return { ok: gs.length === 1 && !!t && t.source.id === textId && t.source.visible, groups: gs.length };
     });
-    await check("Ebene: Gesamt-Deckkraft mischt mit dem Original (Signal/Leuchten statt Gruppe)", async () => {
+    await check("Layer: overall opacity mixes with the original (signal/bloom instead of group)", async () => {
       target = "layers"; params = Core.sanitize(Object.assign({}, D, { strength: 40, bloom: 50 }));
-      await core.executeAsModal(async () => { await selectLayers([textId]); }, { commandName: HIST + " Test" });
+      await core.executeAsModal(async () => { await selectLayers([textId]); }, { commandName: HIST + " test" });
       await applyEffect(false);
       const v = await verifyNow(doc, params);
       const g = doc.layers.filter(isLayerGroup)[0], kids = Array.from(g.layers);
-      const sig = kids.find((k) => k.name === "Signal"), bl = kids.find((k) => k.name === "Leuchten");
+      const sig = kids.find((k) => k.name === "Signal"), bl = kids.find((k) => k.name === "Bloom");
       return { ok: v.ok && Number(g.opacity) === 100 && Math.round(Number(sig.opacity)) === 40 && Math.round(Number(bl.opacity)) === 20, v };
     });
-    await check("Ebene mit Ebenenmaske: nur der sichtbare Teil bekommt den Effekt", async () => {
-      // rechte Hälfte des Artworks per Maske ausblenden
+    await check("Layer with mask: only the visible part gets the effect", async () => {
+      // hide the right half of the artwork with a mask
       await core.executeAsModal(async () => {
         await selectLayers([artId]);
         await batchPlay([
@@ -982,7 +983,7 @@ async function runSelfTest() {
           { _obj: "make", new: { _class: "channel" }, at: { _ref: "channel", _enum: "channel", _value: "mask" }, using: { _enum: "userMaskEnabled", _value: "revealSelection" } },
           { _obj: "set", _target: [{ _ref: "channel", _property: "selection" }], to: { _enum: "ordinal", _value: "none" } },
         ], {});
-      }, { commandName: HIST + " Test Maske" });
+      }, { commandName: HIST + " test mask" });
       target = "layers"; params = Core.sanitize(Object.assign({}, D, { mode: "clear", bloom: 0 }));
       await applyEffect(false);
       const v = await verifyNow(doc, params);
@@ -992,28 +993,28 @@ async function runSelfTest() {
       await core.executeAsModal(async () => {
         const px = await readLayerRGBA(doc, sig.id, { left: 0, top: 0, right: 900, bottom: 520 });
         left = px[(260 * 900 + 200) * 4 + 3]; right = px[(260 * 900 + 700) * 4 + 3];
-      }, { commandName: HIST + " Test" });
+      }, { commandName: HIST + " test" });
       return { ok: v.ok && left > 200 && right < 10, left, right, v };
     });
-    await layerCase("Zwei Ebenen auf einmal", [artId, textId], { mode: "straight", tint: "#39ff7a" });
-    await check("Dokument-Look über Ebenen-Gruppen", async () => {
+    await layerCase("Two layers at once", [artId, textId], { mode: "straight", tint: "#39ff7a" });
+    await check("Document look above layer groups", async () => {
       target = "document"; params = Core.sanitize(Object.assign({}, D, { mode: "clear", curvature: 30 }));
       await applyEffect(false);
       const v = await verifyNow(doc, params);
       await removeEffect();
       return v;
     });
-    await check("Entfernen (Ebenen) stellt die Originale wieder her", async () => {
+    await check("Remove (layers) restores the originals", async () => {
       target = "layers";
       const gs = doc.layers.filter(isLayerGroup);
-      await core.executeAsModal(async () => { await selectLayers(gs.map((g) => g.id)); }, { commandName: HIST + " Test" });
+      await core.executeAsModal(async () => { await selectLayers(gs.map((g) => g.id)); }, { commandName: HIST + " test" });
       await removeEffect();
       const ls = allLayers(doc, []);
       const art = ls.find((l) => l.id === artId), txt = ls.find((l) => l.id === textId);
       return { ok: doc.layers.filter(isLayerGroup).length === 0 && !!art && !!txt && art.visible && txt.visible && !isLayerGroup(art.parent) && !isLayerGroup(txt.parent) && doc.layers.length === 3,
-        ebenen: doc.layers.map((l) => l.name) };
+        layers: doc.layers.map((l) => l.name) };
     });
-    await check("Werte prüfen (kaputte Einstellungen)", async () => {
+    await check("Check values (broken settings)", async () => {
       const s = Core.sanitize({ lines: "abc", wave: 999, mode: "xx", tint: "#fff", mask: "shadow" });
       return { ok: s.lines === Core.DEFAULTS.lines && s.wave === 100 && s.mode === Core.DEFAULTS.mode && s.tint === Core.DEFAULTS.tint && s.mask === "shadow", s };
     });
@@ -1024,9 +1025,9 @@ async function runSelfTest() {
   $("liveCanvas").checked = wasLive;
   syncUI();
   const failed = results.filter((r) => !r.ok);
-  log("SELBSTTEST ERGEBNIS", { bestanden: results.length - failed.length, gesamt: results.length, sekunden: Math.round((Date.now() - t0) / 1000) });
+  log("SELFTEST RESULT", { passed: results.length - failed.length, total: results.length, seconds: Math.round((Date.now() - t0) / 1000) });
   for (const r of results) log((r.ok ? "  ✓ " : "  ✗ ") + r.test, r.ok ? undefined : r.details);
-  setStatus(`Selbsttest: ${results.length - failed.length}/${results.length} bestanden` + (failed.length ? ` – fehlgeschlagen: ${failed.map((r) => r.test).join(", ")}` : " ✓"), failed.length > 0);
+  setStatus(`Self-test: ${results.length - failed.length}/${results.length} passed` + (failed.length ? ` – failed: ${failed.map((r) => r.test).join(", ")}` : " ✓"), failed.length > 0);
   selfTestRunning = false;
   previewSrc = null; thumbSrc = null;
   refreshPreviewSource();
@@ -1046,12 +1047,12 @@ async function init() {
   bindControls();
   syncUI();
   try { action.addNotificationListener(["select", "make", "delete", "open", "close", "set", "move", "transform", "placedLayerEditContents"], onPsEvent); }
-  catch (e) { log("Event-Listener nicht verfügbar", String(e)); }
+  catch (e) { log("event listener not available", String(e)); }
   await refreshPreviewSource();
-  // Entwickler-Hook: eine Datei „run-selftest“ im Datenordner startet den Selbsttest (und wird gelöscht)
+  // developer hook: a file "run-selftest" in the data folder starts the self-test (and is deleted)
   setInterval(async () => {
     if (busy || selfTestRunning) return;
-    try { const f = await (await lfs.getDataFolder()).getEntry("run-selftest"); await f.delete(); runSelfTest(); } catch (e) { /* kein Auftrag */ }
+    try { const f = await (await lfs.getDataFolder()).getEntry("run-selftest"); await f.delete(); runSelfTest(); } catch (e) { /* no request */ }
   }, 3000);
 }
 init();

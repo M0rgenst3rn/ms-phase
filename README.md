@@ -3,183 +3,182 @@
 </p>
 
 <p align="center">
-  <b>Röhrenfernseher-Look für Photoshop: Zeilen, die sich mit dem Bild biegen, Phosphor-Masken, Scanlines,
-  Leuchten, Wölbung und Störungen – für das ganze Dokument oder einzelne Ebenen, nicht-destruktiv.</b><br>
-  <sub>Photoshop 2023 (24.2) oder neuer · UXP-Panel</sub><br>
-  <sub>Freie Photoshop-Tools von <b>Morgenstern</b> · <a href="https://github.com/M0rgenst3rn/ms-distress">Morgenstern Distress</a> · <a href="https://github.com/M0rgenst3rn/ms-printer">Morgenstern Printer</a> · <a href="https://github.com/M0rgenst3rn/ms-render">Morgenstern Render</a> · <b>Morgenstern Phase</b> · <a href="https://github.com/M0rgenst3rn/ms-glow">Morgenstern Glow</a></sub>
+  <b>CRT TV look for Photoshop: lines that bend with the image, phosphor masks, scanlines, bloom, curvature
+  and interference – for the whole document or single layers, non-destructive.</b><br>
+  <sub>Photoshop 2023 (24.2) or newer · UXP panel</sub><br>
+  <sub>Free Photoshop tools by <b>Morgenstern</b> · <a href="https://github.com/M0rgenst3rn/ms-distress">Morgenstern Distress</a> · <a href="https://github.com/M0rgenst3rn/ms-printer">Morgenstern Printer</a> · <a href="https://github.com/M0rgenst3rn/ms-render">Morgenstern Render</a> · <b>Morgenstern Phase</b> · <a href="https://github.com/M0rgenst3rn/ms-glow">Morgenstern Glow</a></sub>
 </p>
 
 ---
 
-## Was ist Morgenstern Phase?
+## What is Morgenstern Phase?
 
-Morgenstern Phase verwandelt dein Artwork in ein Bild auf einer Röhre. Das Signal läuft in Zeilen über den Schirm,
-die je nach Modus gerade bleiben, mit der Helligkeit dicker werden oder sich wellenförmig um Formen legen.
-Dazu kommen Phosphor-Masken, Scanlines, Leuchten, Wölbung, Vignette, Farbverläufe, der Look eines
-abfotografierten Bildschirms, Störungen wie Rauschen, Halbbild-Versatz, Schwingen und Glitch-Blöcke sowie
-Einblendungen in Pixelschrift wie „▶ PLAY“ oder „● REC“.
+Morgenstern Phase turns your artwork into a picture on a cathode-ray tube. The signal runs across the screen
+in lines that, depending on the mode, stay straight, get thicker with brightness, or wrap around shapes like
+waves. On top of that there are phosphor masks, scanlines, bloom, curvature, vignette, colour gradients, the
+look of a photographed screen, interference like noise, interlacing, wobble and glitch blocks, and overlays in
+a pixel font like "▶ PLAY" or "● REC".
 
-Alles wird prozedural berechnet, ganz ohne Bilddateien. Das Ergebnis landet als echte Ebenen mit Mischmodus in
-einer Gruppe, dein Artwork bleibt unverändert.
+Everything is computed procedurally, without any image files. The result lands as real layers with blend
+modes in a group; your artwork stays untouched.
 
-<p align="center"><img src="docs/images/vorher-nachher.png" alt="Vorher und Nachher"></p>
+<p align="center"><img src="docs/images/before-after.png" alt="Before and after"></p>
 
 ### Highlights
 
-- **Ganzes Dokument oder einzelne Ebenen**: Beides ist nicht-destruktiv und lässt sich jederzeit entfernen. Im Ebenen-Modus zeigt die Vorschau das Objekt in deinem Dokument
-- **4 Signal-Modi**: Klar, Gerade, Welle und Wirbel
-- **25 Looks** mit Vorschaubildern deines eigenen Motivs
-- **Farbverlauf**: Signal in zwei oder drei Farben je nach Helligkeit, mit fertigen Verläufen
-- **Abgefilmt**: Schräge, Moiré und Spiegelung wie auf einem Foto vom Bildschirm
-- **Einblendungen**: Kanal, Wiedergabe, Aufnahme, Lautstärke, Datum oder Überwachungskamera in Pixelschrift
-- **Phosphor-Masken**: Streifenmaske, Lochmaske, Schlitzmaske und LED-Raster
-- **Echte Ebenen**: Signal, Maske, Scanlines, Glas, Reflex und Leuchten, jeweils mit Mischmodus und Deckkraft
-- **Vorschau** des ganzen Bilds oder als Detail in 1:1, dazu **Live** im Dokument
-- **Einstellungen in der Gruppe**: Gruppe auswählen, und das Panel lädt ihre Werte wieder
-- **Selbsttest**: 60 Prüfungen gegen das echte Photoshop-Ergebnis
+- **Whole document or single layers**: both are non-destructive and can be removed at any time. In layer mode the preview shows the object inside your document
+- **4 signal modes**: Clear, Straight, Wave and Swirl
+- **25 looks** with previews of your own image
+- **Colour gradient**: the signal in two or three colours by brightness, with ready-made gradients
+- **Filmed screen**: tilt, moiré and reflection like a photo of a screen
+- **Overlays**: channel, playback, recording, volume, date or security camera in a pixel font
+- **Phosphor masks**: aperture grille, shadow mask, slot mask and LED grid
+- **Real layers**: signal, mask, scanlines, glass, reflex and bloom, each with blend mode and opacity
+- **A tidy panel**: collapsible sections, its own colour palette, the essentials on top, everything else in Fine-tuning
+- **Preview** of the whole image or a 1:1 detail, plus **Live** in the document
+- **Settings live in the group**: select the group and the panel loads its values again
+- **Self-test**: 60 checks against the real Photoshop result
 
-## 25 Looks
+## 25 looks
 
-<p align="center"><img src="docs/images/looks.png" alt="Alle 15 Looks"></p>
+<p align="center"><img src="docs/images/looks.png" alt="All 25 looks"></p>
 
-Ein Klick auf einen Look setzt alle Regler. Danach bleibt jeder Wert frei einstellbar. Die Vorschaubilder im
-Panel zeigen jeden Look mit deinem eigenen Dokument oder deiner Ebene.
+One click on a look sets every slider. After that every value stays freely adjustable. The look previews in
+the panel show each look with your own document or layer.
 
 ## Signal
 
-<p align="center"><img src="docs/images/signal.png" alt="Die vier Signal-Modi"></p>
+<p align="center"><img src="docs/images/signal.png" alt="The four signal modes"></p>
 
-| Modus | Was passiert |
+| Mode | What happens |
 |---|---|
-| **Klar** | Das Bild bleibt geschlossen, ideal mit Maske und Scanlines |
-| **Gerade** | Gerade Zeilen, die an hellen Stellen dicker werden |
-| **Welle** | Die Helligkeit verbiegt die Zeilen, sie legen sich wie Höhenlinien um Formen |
-| **Wirbel** | Fließende, verwirbelte Zeilen |
+| **Clear** | The image stays solid, ideal with mask and scanlines |
+| **Straight** | Straight lines that get thicker in bright areas |
+| **Wave** | Brightness bends the lines, they wrap around shapes like contour lines |
+| **Swirl** | Flowing, swirling lines |
 
-Die **Zeilenzahl** gilt für die ganze Bildhöhe, wie die Auflösung eines Fernsehers. So sieht der Look bei
-jeder Dokumentgröße gleich aus, und die kleine Vorschau zeigt dasselbe wie das Ergebnis.
+The number of **Lines** covers the whole image height, like a TV's resolution. So the look is the same at any
+document size, and the small preview shows the same as the result.
 
-## Verlauf, Abgefilmt, Störungen, Einblendungen
+## Gradient, filmed screen, interference, overlays
 
-<p align="center"><img src="docs/images/effekte.png" alt="Die neuen Effekte"></p>
+<p align="center"><img src="docs/images/effects.png" alt="Gradient, filmed screen, interference and overlays"></p>
 
-- **Farbverlauf**: Statt einer Phosphor-Farbe läuft das Signal von Schwarz über einen dunklen Ton und die
-  Mitte bis zu einem hellen Ton, etwa Tiefsee, Synthwave, Glut, Gift oder Polarlicht. Alle drei Farben sind frei wählbar
-- **Abgefilmt**: Mit **Schräge**, **Moiré** und **Reflex** sieht das Bild aus wie mit dem Handy vom Bildschirm
-  fotografiert: leicht gedreht, mit farbigen Interferenzstreifen und einer Spiegelung auf dem Glas
-- **Halbbild-Versatz**: Jede zweite Zeile ist seitlich verschoben, wie bei einem abgefilmten Fernseher
-- **Schwingen**: Das ganze Bild schwingt wellenförmig, wie bei schlechtem Empfang
-- **Einbrennen**: Ein schwaches, festes Geisterbild der hellen Bildteile, wie bei alten Monitoren
-- **Einblendungen**: Pixelschrift im Signal, die sich mit der Röhre wölbt und mitleuchtet. Zur Auswahl stehen
-  Kanal (CH 03), Wiedergabe (▶ PLAY), Aufnahme (● REC mit Zeit), Lautstärke, Datum und Uhrzeit oder
-  Überwachungskamera. Text, Farbe und Größe sind einstellbar, nur bei „Ganzes Dokument“
+- **Colour gradient**: instead of one phosphor colour, the signal runs from black through a dark tone and the
+  middle up to a light tone, e.g. Deep sea, Synthwave, Ember, Toxic or Aurora. All three colours are free to choose
+- **Filmed screen**: with **Tilt**, **Moiré** and **Reflex** the image looks as if photographed off the screen with
+  a phone: slightly rotated, with coloured interference stripes and a reflection on the glass
+- **Interlace**: every second line is shifted sideways, like a filmed TV
+- **Wobble**: the whole image wobbles in waves, like bad reception
+- **Burn-in**: a faint, fixed ghost of the bright parts, like old monitors
+- **Overlays**: a pixel font in the signal that curves with the tube and glows with it. Choose from channel
+  (CH 03), playback (▶ PLAY), recording (● REC with time), volume, date and time, or security camera. Text,
+  colour and size are adjustable; only with "Whole document"
 
-## Phosphor-Masken
+## Phosphor masks
 
-<p align="center"><img src="docs/images/masks.png" alt="Phosphor-Masken im Detail"></p>
+<p align="center"><img src="docs/images/masks.png" alt="Phosphor masks up close"></p>
 
-Die Maske ist das feine RGB-Raster eines echten Bildschirms. Am besten siehst du sie in der Vorschau unter
-**1:1**. Größe und Stärke stellst du im Panel ein, die Stärke auch später an der Ebene „Maske“.
+The mask is the fine RGB grid of a real screen. You see it best in the preview at **1:1**. Set size and
+strength in the panel; the strength also later on the layer "Mask".
 
-## Die Regler
+## The sliders
 
-| Bereich | Regler | Was er macht |
+| Section | Slider | What it does |
 |---|---|---|
-| Oben | **Deckkraft** | Deckkraft der ganzen Gruppe |
-| Signal | **Zeilen / Wellen / Glättung / Linienstärke / Punkte** | Auflösung, Wellen und Form der Zeilen. Es erscheinen nur die Regler, die zum Modus passen |
-| Farbe | **Original / Einfarbig / Verlauf** | Originalfarben, einfarbig in Cyan, Grün, Bernstein, Eisblau, Magenta, Weiß oder eigener Farbe, oder ein Verlauf aus drei Farben |
-| Farbe | **Kontrast / Helligkeit** | Kontrast und Helligkeit des Signals |
-| Bildschirm | **Phosphor-Maske / Maskengröße / Masken-Stärke** | Art und Stärke des RGB-Rasters |
-| Bildschirm | **Scanlines / Leuchten / Leucht-Radius** | Dunkle Zeilenlücken und Leuchten heller Stellen |
-| Röhre | **Wölbung / Runde Ecken / Vignette** | Form der Röhre und abgedunkelte Ränder |
-| Röhre | **Schräge / Moiré / Reflex** | Abfotografiert-Look: gedreht und trapezförmig, Interferenzstreifen, Spiegelung und Lichtsaum |
-| Röhre | **RGB-Versatz / Geisterbild** | Farbsäume und ein versetztes Echo des Bilds |
-| Störungen | **Rauschen / Bildlauf-Balken / Tracking / Glitch** | Schnee, heller Balken, zitternde Zeilen und verschobene Blöcke |
-| Störungen | **Halbbild-Versatz / Schwingen / Einbrennen** | Verschobene Halbbilder, schwingendes Bild, festes Geisterbild |
-| Störungen | **Zufall** | Neue Variante der Störungen |
-| Einblendung | **Art / Eigener Text / Farbe / Schriftgröße** | Pixelschrift wie bei Fernseher und Videorekorder |
+| Top | **Opacity** | Opacity of the whole group |
+| Signal | **Lines / Waves** | Resolution and waves of the lines. Only the sliders that fit the mode appear |
+| Colour | **Original / Mono / Gradient** | Original colours, mono in cyan, green, amber, ice blue, magenta, white or your own colour, or a gradient of three colours |
+| Screen | **Phosphor mask / Mask strength** | Type and strength of the RGB grid |
+| Screen | **Scanlines / Bloom / Bloom radius** | Dark gaps between the lines and glow of bright areas |
+| Screen | **Curvature / Vignette / Noise** | Shape of the tube, darker edges and snow |
+| Overlay | **Type / Text / Colour / Text size** | Pixel font like a TV or VCR |
+| Fine-tuning | **Smoothing / Line thickness / Dots** | Shape of the lines |
+| Fine-tuning | **Contrast / Brightness / Mask size** | Contrast and brightness of the signal, size of the RGB grid |
+| Fine-tuning | **Round corners / Tilt / Moiré / Reflex / RGB shift / Ghosting** | Tube shape, filmed-screen look, colour fringes and an offset echo of the image |
+| Fine-tuning | **Roll bar / Tracking / Glitch / Interlace / Wobble / Burn-in** | Bright bar, jittering lines, shifted blocks, interlacing, wobbling image, fixed ghost |
+| Fine-tuning | **Seed** | A new variant of the interference |
 
-## Ebenen im Dokument
+## Layers in the document
 
-**Ganzes Dokument**: Oben im Dokument entsteht eine Gruppe **„MS Phase“**:
+**Whole document**: a group **"MS Phase"** is created at the top of the document:
 ```
-MS Phase          (Gruppe, Deckkraft)
-├─ Leuchten    Negativ multiplizieren
-├─ Reflex      Negativ multiplizieren (Spiegelung, Lichtsaum)
-├─ Glas        Multiplizieren (Vignette, runde Ecken, Moiré)
-├─ Scanlines   Multiplizieren
-├─ Maske       Multiplizieren
+MS Phase          (group, opacity)
+├─ Bloom       Screen
+├─ Reflex      Screen (reflection, light rim)
+├─ Glass       Multiply (vignette, round corners, moiré)
+├─ Scanlines   Multiply
+├─ Mask        Multiply
 └─ Signal      Normal
 ```
 
-**Nur Ebene**: Jede Ebene kommt in eine eigene Gruppe **„MS Phase · Name“**. Das Original liegt
-unverändert darin, das Signal deckt genau seine Form ab, wie ein Bildschirm in Form des Objekts. Ebenenmasken
-freigestellter Objekte werden berücksichtigt. Maske, Scanlines, Glas und Reflex sind per Schnittmaske auf das Signal
-begrenzt. Die **Deckkraft** mischt den Effekt hier mit dem Original. **Entfernen** stellt das Original
-an derselben Stelle wieder her.
+**Layer only**: every layer gets its own group **"MS Phase · name"**. The original sits inside it unchanged,
+and the signal covers exactly its shape, like a screen in the shape of the object. Layer masks of cut-out
+objects are respected. Mask, scanlines, glass and reflex are clipped to the signal. Here **Opacity** mixes the
+effect with the original. **Remove** puts the original back in the same place.
 
 ## Installation
 
-### macOS (empfohlen)
+### macOS (recommended)
 
-1. Repository herunterladen (**Code → Download ZIP**) und entpacken
-2. Im Terminal im entpackten Ordner ausführen:
+1. Download the repository (**Code → Download ZIP**) and unzip it
+2. Run this in Terminal inside the unzipped folder:
    ```bash
    bash install-mac.sh
    ```
-3. Photoshop (neu) starten → **Zusatzmodule (Plugins) › MS Phase**
+3. (Re)start Photoshop → **Plugins › MS Phase**
 
 ### Alternative: UXP Developer Tool (macOS & Windows)
 
-1. „UXP Developer Tools“ über die Creative-Cloud-App installieren
-2. In Photoshop unter *Einstellungen › Zusatzmodule* den **Entwicklermodus** aktivieren
-3. Im UXP Developer Tool **Add Plugin** wählen, dann `phase/manifest.json` → **Load**
+1. Install "UXP Developer Tools" from the Creative Cloud app
+2. In Photoshop, turn on **Developer Mode** under *Settings › Plugins*
+3. In the UXP Developer Tool choose **Add Plugin**, then `phase/manifest.json` → **Load**
 
-## So benutzt du es
+## How to use it
 
-1. **Ziel wählen**: unter der Vorschau **Ganzes Dokument** oder **Nur Ebene**. Darunter steht, was gerade bearbeitet wird
-2. **Look anklicken**: Die Vorschau zeigt das Ergebnis sofort
-3. **Feinschliff** mit den Reglern. **1:1** unten in der Vorschau zeigt Maske und Zeilen in Originalgröße
-4. **Anwenden** klicken oder **Live** einschalten
-5. **Später ändern**: Gruppe auswählen, Werte anpassen, erneut anwenden. Das Panel lädt die Einstellungen der Gruppe
-6. **Entfernen** löscht den Look wieder. Bei Ebenen kommt das Original zurück
+1. **Choose the target**: **Whole document** or **Layer only** below the preview. Below that you see what is being edited
+2. **Click a look**: the preview shows the result right away
+3. **Fine-tune** with the sliders. **1:1** at the bottom of the preview shows mask and lines at original size
+4. Click **Apply** or turn on **Live**
+5. **Change it later**: select the group, adjust the values, apply again. The panel loads the group's settings
+6. **Remove** deletes the look again. With layers, the original comes back
 
-**Tipp:** Hat sich dein Artwork geändert, klicke erneut auf „Anwenden“. Die Gruppe wird dann neu berechnet.
+**Tip:** if your artwork has changed, click "Apply" again. The group is then recomputed.
 
-## Projektstruktur
+## Project structure
 
 ```
-phase/               Das Plugin (wird so in Photoshop geladen)
-  manifest.json      Plugin-Beschreibung
-  index.html         Panel-Oberfläche
-  main.js            Photoshop-Anbindung (Gruppen, Ebenen, Vorschau, Live, Prüfen, Selbsttest)
-  core.js            Effekt-Engine, reines JavaScript
-install-mac.sh       Packt das Plugin (.ccx) und installiert es
-tools/               Test-Renderer, Testszene, Bilder dieser README, Icons
-docs/images/         Beispielbilder
+phase/               The plugin (loaded into Photoshop as is)
+  manifest.json      Plugin description
+  index.html         Panel UI
+  ms-ui.js/.css      Shared Morgenstern controls and design
+  main.js            Photoshop side (groups, layers, preview, Live, verify, self-test)
+  core.js            Effect engine, plain JavaScript
+install-mac.sh       Packs the plugin (.ccx) and installs it
+tools/               Test renderer, test scene, README images, icons, browser preview of the panel
+docs/images/         Example images
 ```
 
 ```bash
-node tools/render-test.js in.raw 960 540 out.png phase   # einen Look ohne Photoshop rendern
-node tools/make-showcase.js                                # Bilder dieser README neu erzeugen (braucht Python mit Pillow)
+node tools/render-test.js in.raw 960 540 out.png phase   # render a look without Photoshop
+node tools/make-showcase.js                               # rebuild the images of this README (needs Python with Pillow)
 ```
 
-## Fehler gefunden? Ideen?
+## Found a bug? Got an idea?
 
-Melde dich gern! Am einfachsten über **[Issues](https://github.com/M0rgenst3rn/ms-phase/issues)** hier auf GitHub:
-**New issue** klicken und kurz beschreiben, was passiert ist. Hilfreich sind Photoshop-Version, Betriebssystem
-und gern ein Screenshot. Dafür brauchst du nur ein kostenloses GitHub-Konto. Verbesserungsvorschläge und
-Wünsche für neue Funktionen sind genauso willkommen.
+Get in touch! The easiest way is **[Issues](https://github.com/M0rgenst3rn/ms-phase/issues)** here on GitHub:
+click **New issue** and briefly describe what happened. Your Photoshop version, operating system and a
+screenshot help a lot. All you need is a free GitHub account. Suggestions and feature requests are just as
+welcome.
 
-## Lizenz
+## License
 
-[MIT](LICENSE): Du darfst den Code frei ansehen, verändern, weitergeben und auch kommerziell nutzen.
-Einzige Bedingung: Der Lizenzhinweis bleibt in Kopien enthalten.
+[MIT](LICENSE): you may freely read, change, share and also use the code commercially.
+The only condition: the license notice stays in copies.
 
-Adobe und Photoshop sind Marken von Adobe Inc. Dieses Projekt ist unabhängig und steht in keiner
-Verbindung zu Adobe.
+Adobe and Photoshop are trademarks of Adobe Inc. This project is independent and not affiliated with Adobe.
 
 ---
 
 <p align="center"><sub>Morgenstern Phase<br>
-Entwickelt von Linus Leinberger</sub></p>
+Made by Linus Leinberger</sub></p>

@@ -1,27 +1,27 @@
 "use strict";
-// MS Phase – Kern-Engine (reines JavaScript, läuft im Panel und in Node).
-// Rechnet ein Bild in einen Röhrenfernseher-Look um. Ergebnis sind mehrere Ebenen, die Photoshop
-// später als echte Ebenen mit Mischmodus bekommt:
-//   signal  Normal    das Bild als Fernsehsignal (Linien, Farbe, Versatz, Störungen, Einblendungen)
-//   mask    Multipl.  Phosphor-Maske (Streifen, Lochmaske, Schlitzmaske, LED)
+// MS Phase – core engine (plain JavaScript, runs in the panel and in Node).
+// Turns an image into a CRT TV look. The result is several layers that Photoshop
+// later gets as real layers with blend modes:
+//   signal  Normal    the image as a TV signal (lines, colour, shift, interference, overlays)
+//   mask    Multipl.  phosphor mask (aperture grille, shadow mask, slot mask, LED)
 //   scan    Multipl.  Scanlines
-//   glass   Multipl.  Vignette, runde Ecken, Moiré
-//   reflex  Screen    Spiegelung auf dem Glas und Lichtsaum am Röhrenrand
-//   bloom   Screen    Leuchten heller Stellen
-// Alle Größen hängen an der Zeilenzahl über die Bildhöhe – darum sieht die kleine Vorschau aus wie
-// das Ergebnis in voller Auflösung.
+//   glass   Multipl.  vignette, round corners, moiré
+//   reflex  Screen    reflection on the glass and a light rim at the tube edge
+//   bloom   Screen    glow of bright areas
+// All sizes depend on the number of lines over the image height – so the small preview looks like
+// the result at full resolution.
 
 const DEFAULTS = {
   mode: "wave",          // clear | straight | wave | swirl
-  lines: 180,            // Zeilen über die Bildhöhe
-  wave: 45,              // Wellenstärke (Welle, Wirbel)
-  thickness: 70,         // maximale Linienstärke
-  smooth: 35,            // Glättung der Wellen
-  dots: 0,               // Linien in Punkte zerlegen
+  lines: 180,            // lines over the image height
+  wave: 45,              // wave strength (wave, swirl)
+  thickness: 70,         // maximum line thickness
+  smooth: 35,            // smoothing of the waves
+  dots: 0,               // break the lines into dots
   colorMode: "phosphor", // original | phosphor | gradient
-  tint: "#3fd4ff",       // Phosphor-Farbe bzw. Mitte des Verlaufs
-  tintLow: "#1b2a8f",    // Verlauf: dunkle Töne
-  tintHigh: "#ffffff",   // Verlauf: helle Töne
+  tint: "#3fd4ff",       // phosphor colour or middle of the gradient
+  tintLow: "#1b2a8f",    // gradient: dark tones
+  tintHigh: "#ffffff",   // gradient: light tones
   contrast: 15,
   brightness: 0,
   mask: "none",          // none | aperture | shadow | slot | led
@@ -33,95 +33,95 @@ const DEFAULTS = {
   curvature: 0,
   vignette: 35,
   corners: 0,
-  tilt: 0,               // schräg abfotografiert (Drehung + Trapez)
-  moire: 0,              // Moiré wie beim Abfotografieren
-  reflection: 0,         // Spiegelung und Lichtsaum auf dem Glas
+  tilt: 0,               // photographed at an angle (rotation + keystone)
+  moire: 0,              // moiré like when photographing a screen
+  reflection: 0,         // reflection and light rim on the glass
   rgbShift: 25,
   ghost: 0,
   noise: 12,
   rollbar: 0,
   jitter: 0,
-  interlace: 0,          // Halbbild-Versatz: jede zweite Zeile verschoben
-  wobble: 0,             // ganzes Bild schwingt (schlechter Empfang)
+  interlace: 0,          // interlace offset: every second line shifted
+  wobble: 0,             // whole image wobbles (bad reception)
   glitch: 0,
-  burnIn: 0,             // eingebranntes Geisterbild
+  burnIn: 0,             // burned-in ghost image
   osd: "none",           // none | channel | play | rec | volume | timecode | cctv
-  osdText: "",           // eigener Text (leer = passend zur Einblendung)
+  osdText: "",           // own text (empty = matches the overlay)
   osdColor: "#7dff8a",
-  osdSize: 4,            // Zeichenhöhe in % der Bildhöhe
+  osdSize: 4,            // character height in % of the image height
   seed: 7,
-  strength: 100,         // Gesamt-Deckkraft
+  strength: 100,         // overall opacity
 };
 
 const MODES = [
-  { id: "clear", name: "Klar", hint: "Bild bleibt geschlossen" },
-  { id: "straight", name: "Gerade", hint: "gerade Zeilen, Stärke nach Helligkeit" },
-  { id: "wave", name: "Welle", hint: "Zeilen biegen sich mit der Helligkeit" },
-  { id: "swirl", name: "Wirbel", hint: "fließende, verwirbelte Zeilen" },
+  { id: "clear", name: "Clear", hint: "the image stays solid" },
+  { id: "straight", name: "Straight", hint: "straight lines, thickness follows brightness" },
+  { id: "wave", name: "Wave", hint: "lines bend with brightness" },
+  { id: "swirl", name: "Swirl", hint: "flowing, swirling lines" },
 ];
 const MASKS = [
-  { id: "none", name: "Keine" },
-  { id: "aperture", name: "Streifenmaske" },
-  { id: "shadow", name: "Lochmaske" },
-  { id: "slot", name: "Schlitzmaske" },
-  { id: "led", name: "LED-Raster" },
+  { id: "none", name: "None" },
+  { id: "aperture", name: "Aperture grille" },
+  { id: "shadow", name: "Shadow mask" },
+  { id: "slot", name: "Slot mask" },
+  { id: "led", name: "LED grid" },
 ];
 const TINTS = [
-  { id: "#3fd4ff", name: "Cyan" }, { id: "#39ff7a", name: "Grün (P1)" }, { id: "#ffb43a", name: "Bernstein" },
-  { id: "#9fc8ff", name: "Eisblau" }, { id: "#ff4fd8", name: "Magenta" }, { id: "#f2f2f2", name: "Weiß" },
+  { id: "#3fd4ff", name: "Cyan" }, { id: "#39ff7a", name: "Green (P1)" }, { id: "#ffb43a", name: "Amber" },
+  { id: "#9fc8ff", name: "Ice blue" }, { id: "#ff4fd8", name: "Magenta" }, { id: "#f2f2f2", name: "White" },
 ];
-// fertige Verläufe (dunkel → Mitte → hell)
+// ready-made gradients (dark → middle → light)
 const GRADIENTS = [
-  { name: "Tiefsee", low: "#1b2a8f", mid: "#3fd4ff", high: "#ffffff" },
+  { name: "Deep sea", low: "#1b2a8f", mid: "#3fd4ff", high: "#ffffff" },
   { name: "Synthwave", low: "#3a0a6b", mid: "#ff3fa4", high: "#ffe2a8" },
-  { name: "Glut", low: "#4a0a0a", mid: "#ff6a1a", high: "#fff1b0" },
-  { name: "Gift", low: "#0b3a1a", mid: "#39ff7a", high: "#f0ffb0" },
-  { name: "Polarlicht", low: "#0a2a4a", mid: "#2dffb0", high: "#e8d0ff" },
+  { name: "Ember", low: "#4a0a0a", mid: "#ff6a1a", high: "#fff1b0" },
+  { name: "Toxic", low: "#0b3a1a", mid: "#39ff7a", high: "#f0ffb0" },
+  { name: "Aurora", low: "#0a2a4a", mid: "#2dffb0", high: "#e8d0ff" },
 ];
 const OSDS = [
-  { id: "none", name: "Keine" },
-  { id: "channel", name: "Kanal (CH 03)" },
-  { id: "play", name: "Wiedergabe (▶ PLAY)" },
-  { id: "rec", name: "Aufnahme (● REC + Zeit)" },
-  { id: "volume", name: "Lautstärke" },
-  { id: "timecode", name: "Datum und Uhrzeit" },
-  { id: "cctv", name: "Überwachungskamera" },
+  { id: "none", name: "None" },
+  { id: "channel", name: "Channel (CH 03)" },
+  { id: "play", name: "Playback (▶ PLAY)" },
+  { id: "rec", name: "Recording (● REC + time)" },
+  { id: "volume", name: "Volume" },
+  { id: "timecode", name: "Date and time" },
+  { id: "cctv", name: "Security camera" },
 ];
 
-// Looks. Jeder Look setzt alle Werte (fehlende = Standard), darum sehen sie immer gleich aus.
+// Looks. Every look sets all values (missing = default), so they always look the same.
 const PRESETS = [
   { id: "phase", name: "Phase", p: {} },
-  { id: "straight", name: "Zeilen", p: { mode: "straight", lines: 150, thickness: 80, wave: 0, tint: "#9fc8ff", bloom: 45 } },
-  { id: "swirl", name: "Wirbel", p: { mode: "swirl", wave: 60, lines: 160, tint: "#ff4fd8", bloom: 60 } },
+  { id: "straight", name: "Lines", p: { mode: "straight", lines: 150, thickness: 80, wave: 0, tint: "#9fc8ff", bloom: 45 } },
+  { id: "swirl", name: "Swirl", p: { mode: "swirl", wave: 60, lines: 160, tint: "#ff4fd8", bloom: 60 } },
   { id: "dotwave", name: "Dot Wave", p: { mode: "wave", dots: 70, lines: 140, thickness: 85, tint: "#3fd4ff", bloom: 65 } },
-  { id: "deepsea", name: "Tiefsee", p: { mode: "wave", colorMode: "gradient", tintLow: "#1b2a8f", tint: "#3fd4ff", tintHigh: "#ffffff", wave: 55, lines: 170, bloom: 65, contrast: 20 } },
+  { id: "deepsea", name: "Deep sea", p: { mode: "wave", colorMode: "gradient", tintLow: "#1b2a8f", tint: "#3fd4ff", tintHigh: "#ffffff", wave: 55, lines: 170, bloom: 65, contrast: 20 } },
   { id: "synth", name: "Synthwave", p: { mode: "wave", colorMode: "gradient", tintLow: "#3a0a6b", tint: "#ff3fa4", tintHigh: "#ffe2a8", wave: 40, lines: 160, bloom: 70, reflection: 35, curvature: 20, corners: 25 } },
-  { id: "hologram", name: "Hologramm", p: { mode: "wave", wave: 30, lines: 220, tint: "#4fb4ff", contrast: 0, rgbShift: 45, ghost: 35, noise: 18, bloom: 70, jitter: 15, interlace: 40 } },
-  { id: "scifi", name: "Sci-Fi-Interface", p: { mode: "wave", dots: 55, wave: 35, lines: 190, tint: "#3fd4ff", bloom: 80, bloomRadius: 45, noise: 5, rgbShift: 15, interlace: 25, vignette: 20 } },
+  { id: "hologram", name: "Hologram", p: { mode: "wave", wave: 30, lines: 220, tint: "#4fb4ff", contrast: 0, rgbShift: 45, ghost: 35, noise: 18, bloom: 70, jitter: 15, interlace: 40 } },
+  { id: "scifi", name: "Sci-fi interface", p: { mode: "wave", dots: 55, wave: 35, lines: 190, tint: "#3fd4ff", bloom: 80, bloomRadius: 45, noise: 5, rgbShift: 15, interlace: 25, vignette: 20 } },
   { id: "terminal", name: "Terminal", p: { mode: "clear", tint: "#39ff7a", contrast: 35, scanlines: 60, bloom: 60, curvature: 35, vignette: 55, corners: 45, rgbShift: 0, noise: 10, lines: 240, burnIn: 25 } },
-  { id: "amber", name: "Bernstein", p: { mode: "clear", tint: "#ffb43a", contrast: 30, scanlines: 55, bloom: 55, curvature: 30, vignette: 50, corners: 40, rgbShift: 0, lines: 200 } },
-  { id: "gameboy", name: "Taschenkonsole", p: { mode: "clear", tint: "#a6c24a", contrast: 40, mask: "led", maskSize: 140, maskStrength: 55, scanlines: 0, bloom: 15, rgbShift: 0, noise: 0, vignette: 20, lines: 144 } },
-  { id: "xray", name: "Röntgen", p: { mode: "wave", wave: 25, colorMode: "gradient", tintLow: "#04122e", tint: "#5ab0ff", tintHigh: "#eaf6ff", contrast: 55, ghost: 30, bloom: 60, noise: 15, lines: 230, vignette: 55 } },
+  { id: "amber", name: "Amber", p: { mode: "clear", tint: "#ffb43a", contrast: 30, scanlines: 55, bloom: 55, curvature: 30, vignette: 50, corners: 40, rgbShift: 0, lines: 200 } },
+  { id: "gameboy", name: "Handheld", p: { mode: "clear", tint: "#a6c24a", contrast: 40, mask: "led", maskSize: 140, maskStrength: 55, scanlines: 0, bloom: 15, rgbShift: 0, noise: 0, vignette: 20, lines: 144 } },
+  { id: "xray", name: "X-ray", p: { mode: "wave", wave: 25, colorMode: "gradient", tintLow: "#04122e", tint: "#5ab0ff", tintHigh: "#eaf6ff", contrast: 55, ghost: 30, bloom: 60, noise: 15, lines: 230, vignette: 55 } },
   { id: "trinitron", name: "Trinitron", p: { mode: "clear", colorMode: "original", mask: "aperture", maskStrength: 55, scanlines: 30, bloom: 35, rgbShift: 10, noise: 4, lines: 240, contrast: 10, reflection: 20 } },
   { id: "arcade", name: "Arcade", p: { mode: "clear", colorMode: "original", mask: "shadow", maskStrength: 60, scanlines: 45, bloom: 55, curvature: 45, vignette: 45, corners: 50, rgbShift: 15, lines: 224, contrast: 20, reflection: 25 } },
-  { id: "tv80s", name: "Wohnzimmer 80er", p: { mode: "clear", colorMode: "original", mask: "slot", maskStrength: 45, scanlines: 30, bloom: 40, curvature: 55, vignette: 60, corners: 65, rgbShift: 30, ghost: 25, noise: 18, lines: 240, reflection: 40, osd: "channel" } },
+  { id: "tv80s", name: "80s living room", p: { mode: "clear", colorMode: "original", mask: "slot", maskStrength: 45, scanlines: 30, bloom: 40, curvature: 55, vignette: 60, corners: 65, rgbShift: 30, ghost: 25, noise: 18, lines: 240, reflection: 40, osd: "channel" } },
   { id: "vaporwave", name: "Vaporwave", p: { mode: "clear", colorMode: "original", mask: "slot", maskStrength: 40, rgbShift: 55, bloom: 60, curvature: 35, corners: 45, vignette: 40, interlace: 30, reflection: 30, contrast: 10, osd: "play", osdColor: "#ffffff" } },
   { id: "vhs", name: "VHS", p: { mode: "clear", colorMode: "original", scanlines: 20, bloom: 35, rgbShift: 70, ghost: 30, noise: 30, jitter: 45, rollbar: 25, lines: 240, contrast: 5, wobble: 20, osd: "play", osdColor: "#ffffff" } },
   { id: "camcorder", name: "Camcorder", p: { mode: "clear", colorMode: "original", scanlines: 25, bloom: 40, rgbShift: 40, noise: 22, jitter: 15, interlace: 35, lines: 240, osd: "rec", osdColor: "#ffffff", vignette: 30 } },
-  { id: "cctv", name: "Überwachung", p: { mode: "clear", tint: "#c8d8c0", contrast: 30, scanlines: 40, bloom: 30, noise: 45, interlace: 30, curvature: 25, vignette: 60, rgbShift: 0, lines: 220, osd: "cctv", osdColor: "#f2f2f2", osdSize: 3.5 } },
-  { id: "filmed", name: "Abgefilmt", p: { mode: "clear", colorMode: "original", mask: "aperture", maskStrength: 50, maskSize: 120, scanlines: 30, bloom: 45, curvature: 30, corners: 35, vignette: 50, tilt: 45, moire: 55, reflection: 50, rgbShift: 15, noise: 10, lines: 240 } },
-  { id: "static", name: "Rauschen", p: { mode: "clear", colorMode: "original", scanlines: 35, bloom: 30, noise: 80, rollbar: 55, rgbShift: 25, jitter: 20, curvature: 30, vignette: 45, lines: 200, wobble: 25 } },
-  { id: "broken", name: "Kaputter Sender", p: { mode: "swirl", wave: 70, colorMode: "original", glitch: 60, rollbar: 60, wobble: 55, interlace: 50, rgbShift: 75, noise: 45, jitter: 40, bloom: 50, lines: 170 } },
-  { id: "lost", name: "Signal verloren", p: { mode: "straight", tint: "#3fd4ff", glitch: 70, jitter: 35, rgbShift: 60, noise: 35, lines: 170, thickness: 75, bloom: 60, osd: "channel", osdText: "NO SIGNAL" } },
-  { id: "ledwall", name: "LED-Wand", p: { mode: "clear", colorMode: "original", mask: "led", maskSize: 260, maskStrength: 85, scanlines: 0, bloom: 50, rgbShift: 0, noise: 0, vignette: 0, lines: 120, contrast: 20 } },
-  { id: "nightvision", name: "Nachtsicht", p: { mode: "clear", tint: "#39ff7a", contrast: 45, brightness: 10, scanlines: 35, bloom: 70, noise: 55, vignette: 80, corners: 0, rgbShift: 0, lines: 260, burnIn: 15 } },
+  { id: "cctv", name: "Surveillance", p: { mode: "clear", tint: "#c8d8c0", contrast: 30, scanlines: 40, bloom: 30, noise: 45, interlace: 30, curvature: 25, vignette: 60, rgbShift: 0, lines: 220, osd: "cctv", osdColor: "#f2f2f2", osdSize: 3.5 } },
+  { id: "filmed", name: "Filmed screen", p: { mode: "clear", colorMode: "original", mask: "aperture", maskStrength: 50, maskSize: 120, scanlines: 30, bloom: 45, curvature: 30, corners: 35, vignette: 50, tilt: 45, moire: 55, reflection: 50, rgbShift: 15, noise: 10, lines: 240 } },
+  { id: "static", name: "Static", p: { mode: "clear", colorMode: "original", scanlines: 35, bloom: 30, noise: 80, rollbar: 55, rgbShift: 25, jitter: 20, curvature: 30, vignette: 45, lines: 200, wobble: 25 } },
+  { id: "broken", name: "Broken channel", p: { mode: "swirl", wave: 70, colorMode: "original", glitch: 60, rollbar: 60, wobble: 55, interlace: 50, rgbShift: 75, noise: 45, jitter: 40, bloom: 50, lines: 170 } },
+  { id: "lost", name: "Signal lost", p: { mode: "straight", tint: "#3fd4ff", glitch: 70, jitter: 35, rgbShift: 60, noise: 35, lines: 170, thickness: 75, bloom: 60, osd: "channel", osdText: "NO SIGNAL" } },
+  { id: "ledwall", name: "LED wall", p: { mode: "clear", colorMode: "original", mask: "led", maskSize: 260, maskStrength: 85, scanlines: 0, bloom: 50, rgbShift: 0, noise: 0, vignette: 0, lines: 120, contrast: 20 } },
+  { id: "nightvision", name: "Night vision", p: { mode: "clear", tint: "#39ff7a", contrast: 45, brightness: 10, scanlines: 35, bloom: 70, noise: 55, vignette: 80, corners: 0, rgbShift: 0, lines: 260, burnIn: 15 } },
 ];
 function presetParams(id) {
   const pr = PRESETS.find((x) => x.id === id);
   return pr ? Object.assign({}, DEFAULTS, pr.p) : null;
 }
 
-// Werte prüfen und auf ihre Grenzen setzen (gespeicherte Einstellungen können alt oder kaputt sein)
+// Check values and clamp them (saved settings can be old or broken)
 const RANGES = {
   lines: [40, 600], wave: [0, 100], thickness: [10, 100], smooth: [0, 100], dots: [0, 100], contrast: [-50, 100], brightness: [-50, 50],
   maskSize: [50, 400], maskStrength: [0, 100], scanlines: [0, 100], bloom: [0, 100], bloomRadius: [5, 100], curvature: [0, 100],
@@ -148,7 +148,7 @@ function sanitize(p) {
   return out;
 }
 
-// ---------------------------------------------------------------- Pixelschrift für Einblendungen (5×7)
+// ---------------------------------------------------------------- Pixel font for overlays (5×7)
 const GLYPHS = {
   "0": [14, 17, 19, 21, 25, 17, 14], "1": [4, 12, 4, 4, 4, 4, 14], "2": [14, 17, 1, 2, 4, 8, 31], "3": [31, 2, 4, 2, 1, 17, 14],
   "4": [2, 6, 10, 18, 31, 2, 2], "5": [31, 16, 30, 1, 1, 17, 14], "6": [6, 8, 16, 30, 17, 17, 14], "7": [31, 1, 2, 4, 8, 8, 8],
@@ -165,11 +165,11 @@ const GLYPHS = {
   ">": [16, 24, 28, 30, 28, 24, 16], "*": [0, 14, 31, 31, 31, 14, 0], "|": [31, 31, 31, 31, 31, 31, 31], "_": [31, 17, 17, 17, 17, 17, 31],
   " ": [0, 0, 0, 0, 0, 0, 0],
 };
-// ▶ und ● als Pixelzeichen; alles in Großbuchstaben; unbekannte Zeichen fallen weg; max. 28 Zeichen
+// ▶ and ● as pixel glyphs; all upper case; unknown characters are dropped; max. 28 characters
 function cleanOsdText(v) {
   return String(v).toUpperCase().replace(/▶/g, ">").replace(/●/g, "*").split("").filter((c) => GLYPHS[c]).join("").slice(0, 28);
 }
-// Elemente der Einblendung in Ziel-Koordinaten: { text, x, y, u (Pixel je Schriftpixel), color }
+// overlay elements in target coordinates: { text, x, y, u (pixels per font pixel), color }
 function osdLayout(p, fullW, fullH) {
   if (p.osd === "none") return [];
   const u = Math.max(1, fullH * p.osdSize / 100 / 7);
@@ -198,7 +198,7 @@ function osdLayout(p, fullW, fullH) {
     default: return [];
   }
 }
-// Deckung (0..1) eines Elements am Ziel-Punkt X, Y; sh = Schatten-Deckung
+// coverage (0..1) of an element at target point X, Y; sh = shadow coverage
 function osdCover(el, X, Y) {
   const gx = (X - el.x) / el.u, gy = (Y - el.y) / el.u;
   if (gy < 0 || gy >= 7 || gx < 0) return 0;
@@ -208,7 +208,7 @@ function osdCover(el, X, Y) {
   return g && (g[cy] >> (4 - cx)) & 1 ? 1 : 0;
 }
 
-// ---------------------------------------------------------------- Helfer
+// ---------------------------------------------------------------- Helpers
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 function hexRgb(h) { const n = parseInt(String(h).slice(1), 16); return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; }
 function hash2(x, y, s) {
@@ -228,7 +228,7 @@ function noise2(x, y, s) {
 }
 function fbm(x, y, s) { return noise2(x, y, s) * 0.55 + noise2(x * 2.1, y * 2.1, s + 7) * 0.3 + noise2(x * 4.3, y * 4.3, s + 13) * 0.15; }
 
-// Box-Blur (2 Durchgänge ≈ Gauß) auf einem Float-Feld; große Radien werden verkleinert gerechnet.
+// box blur (2 passes ≈ Gaussian) on a float field; large radii are computed downsampled.
 function boxBlur(src, w, h, r) {
   r = Math.max(0, Math.round(r));
   if (!r) return src;
@@ -251,8 +251,8 @@ function boxBlur(src, w, h, r) {
   }
   return out;
 }
-// geglättetes Feld mit Abtaster. get(i) liefert den Wert an Pixel i (Bild w×h); bei großem Radius wird
-// direkt in eine verkleinerte Kopie gemittelt – so braucht auch ein sehr großes Bild kaum Speicher.
+// smoothed field with a sampler. get(i) returns the value at pixel i (image w×h); for a large radius
+// it averages straight into a downsampled copy – so even a very large image needs little memory.
 function smoothField(get, w, h, radius) {
   const f = Math.max(1, Math.floor(radius / 3));
   const sw = Math.max(1, Math.ceil(w / f)), sh = Math.max(1, Math.ceil(h / f));
@@ -265,7 +265,7 @@ function smoothField(get, w, h, radius) {
   const r = radius / f;
   data = boxBlur(boxBlur(data, sw, sh, r * 0.6), sw, sh, r * 0.6);
   return {
-    // x, y in Pixeln des Originalbilds
+    // x, y in pixels of the original image
     at(x, y) {
       let fx = (x + 0.5) / f - 0.5, fy = (y + 0.5) / f - 0.5;
       if (fx < 0) fx = 0; else if (fx > sw - 1) fx = sw - 1;
@@ -276,12 +276,12 @@ function smoothField(get, w, h, radius) {
   };
 }
 
-// ---------------------------------------------------------------- Geometrie
-// opts: { w, h                 Bildausschnitt in Pixeln
-//         fullW, fullH         Größe des ganzen Ziels (Dokument oder Ebene) in Ziel-Pixeln
-//         originX, originY     Lage des Ausschnitts im Ziel (Ziel-Pixel)
-//         pxScale              Ziel-Pixel pro Ausschnitt-Pixel (Vorschau verkleinert > 1)
-//         lineBase             Höhe, über die die Zeilen gezählt werden (Ebene: Dokumenthöhe; sonst fullH)
+// ---------------------------------------------------------------- Geometry
+// opts: { w, h                 image region in pixels
+//         fullW, fullH         size of the whole target (document or layer) in target pixels
+//         originX, originY     position of the region in the target (target pixels)
+//         pxScale              target pixels per region pixel (downsampled preview > 1)
+//         lineBase             height over which the lines are counted (layer: document height; else fullH)
 //         params }
 function geometry(opts) {
   const p = sanitize(opts.params), w = opts.w, h = opts.h;
@@ -291,9 +291,9 @@ function geometry(opts) {
   return { p, w, h, N: w * h, fullW, fullH, ox: opts.originX || 0, oy: opts.originY || 0, ps, pitch, pitchS: pitch / ps,
     k: p.curvature / 100 * 0.32, s: p.seed | 0, tilt: p.tilt > 0, cosA: Math.cos(ang), sinA: Math.sin(ang), key: p.tilt / 100 * 0.14 };
 }
-// Röhrenwölbung: Bildschirm-Koordinate -> Bild-Koordinate (null = außerhalb der Röhre)
+// tube curvature: screen coordinate -> image coordinate (null = outside the tube)
 function warp(g, X, Y, out) {
-  if (g.tilt) {   // schräg abfotografiert: leicht gedreht und oben schmaler (Trapez)
+  if (g.tilt) {   // photographed at an angle: slightly rotated and narrower at the top (keystone)
     const dx = X - g.fullW / 2, dy = Y - g.fullH / 2;
     X = g.fullW / 2 + dx * g.cosA + dy * g.sinA; Y = g.fullH / 2 - dx * g.sinA + dy * g.cosA;
   }
@@ -301,16 +301,16 @@ function warp(g, X, Y, out) {
   const v = Y / g.fullH * 2 - 1;
   if (g.tilt) u = u * (1 + g.key * v) * (1 + g.key * 0.6);
   const cu = u * (1 + g.k * v * v), cv = v * (1 + g.k * u * u);
-  out[2] = Math.max(Math.abs(cu), Math.abs(cv));   // 1 = Röhrenrand
+  out[2] = Math.max(Math.abs(cu), Math.abs(cv));   // 1 = tube edge
   if (cu < -1 || cu > 1 || cv < -1 || cv > 1) return false;
   out[0] = (cu + 1) / 2 * g.fullW; out[1] = (cv + 1) / 2 * g.fullH;
   return true;
 }
 
 // ---------------------------------------------------------------- Signal
-// opts zusätzlich: rgba (8 Bit RGBA des Ausschnitts), opaque (true = ganzes Dokument, false = Ebene: das Signal
-// deckt genau die Form der Ebene ab, Zeilenlücken und Ränder außerhalb der Röhre sind darin schwarz – wie ein
-// Bildschirm in Form des Objekts). Rückgabe: RGBA (Uint8ClampedArray)
+// opts also: rgba (8-bit RGBA of the region), opaque (true = whole document, false = layer: the signal
+// covers exactly the shape of the layer, line gaps and edges outside the tube are black inside it – like a
+// screen in the shape of the object). Returns: RGBA (Uint8ClampedArray)
 function renderSignal(opts) {
   const g = geometry(opts), p = g.p, { w, h, N, fullW, fullH, ox, oy, ps, pitch, pitchS, s } = g;
   const src = opts.rgba, opaque = opts.opaque !== false;
@@ -318,7 +318,7 @@ function renderSignal(opts) {
   const Ls = lineMode && p.mode !== "straight"
     ? smoothField((i) => (0.299 * src[i * 4] + 0.587 * src[i * 4 + 1] + 0.114 * src[i * 4 + 2]) / 255 * src[i * 4 + 3] / 255, w, h, (0.25 + p.smooth / 100 * 2.2) * pitchS)
     : null;
-  // bilineares Abtasten der Quelle an Ziel-Koordinaten -> out[0..3] in 0..1
+  // bilinear sampling of the source at target coordinates -> out[0..3] in 0..1
   const sample = (X, Y, out) => {
     let fx = (X - ox) / ps - 0.5, fy = (Y - oy) / ps - 0.5;
     if (fx < 0) fx = 0; else if (fx > w - 1) fx = w - 1;
@@ -331,10 +331,10 @@ function renderSignal(opts) {
   };
   const tint = hexRgb(p.tint), lowC = hexRgb(p.tintLow), highC = hexRgb(p.tintHigh);
   const ilc = p.interlace / 100, wob = p.wobble / 100 * pitch * 3.5, wobLen = pitch * 26, wobPh = hash2(s, 7, 3) * 6.283;
-  // Einbrennen: weiches, versetztes, festes Abbild der hellen Bildteile
+  // burn-in: soft, offset, fixed copy of the bright parts
   const burn = p.burnIn / 100 * 0.42;
   const Bf = burn > 0 ? smoothField((i) => { const v = (0.299 * src[i * 4] + 0.587 * src[i * 4 + 1] + 0.114 * src[i * 4 + 2]) / 255 * src[i * 4 + 3] / 255; return v > 0.45 ? v : 0; }, w, h, Math.max(1, pitchS * 1.2)) : null;
-  // Einblendungen (nur im ganzen Dokument)
+  // overlays (whole document only)
   const osd = opaque ? osdLayout(p, fullW, fullH) : [];
   const shiftPx = p.rgbShift / 100 * pitch * 0.9;
   const ghostA = p.ghost / 100 * 0.45, ghostDx = pitch * 4.5;
@@ -351,19 +351,19 @@ function renderSignal(opts) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x, X = ox + (x + 0.5) * ps;
       if (!warp(g, X, Y, q)) { out[i * 4 + 3] = opaque ? 255 : sample(X, Y, c0)[3] * 255; continue; }
-      const SX0 = q[0];   // ungestörte Lage (für Einblendungen)
+      const SX0 = q[0];   // undisturbed position (for overlays)
       let SX = SX0;
       const SY = q[1], t0 = SY / pitch, li = Math.floor(t0);
-      // Schwingen (schlechter Empfang) und Halbbild-Versatz (jede zweite Zeile seitlich verschoben)
+      // wobble (bad reception) and interlace offset (every second line shifted sideways)
       if (wob > 0) SX += wob * Math.sin(SY / wobLen * 6.283 + wobPh) + wob * 0.35 * Math.sin(SY / (wobLen * 0.37) + wobPh * 2);
       const odd = (li & 1) === 1;
       if (ilc > 0 && odd) SX += ilc * pitch * 2.2;
-      // Zeilen-Zittern (Tracking) und gelegentliche Risse
+      // line jitter (tracking) and occasional tears
       if (jit > 0) {
         SX += (noise1(li * 0.23, s + 5) - 0.5) * jit * pitch * 3;
         if (hash2(li >> 1, 9, s) < jit * 0.06) SX += (hash2(li >> 1, 10, s) - 0.5) * jit * fullW * 0.06;
       }
-      // Glitch: verschobene, grob gerasterte Blöcke
+      // glitch: shifted, coarsely pixelated blocks
       let blockCol = 0;
       if (gl > 0) {
         const band = Math.floor(SY / (pitch * 3));
@@ -377,7 +377,7 @@ function renderSignal(opts) {
           }
         }
       }
-      // Farbkanäle versetzt abtasten (RGB-Versatz) + Geisterbild
+      // sample the colour channels offset (RGB shift) + ghost image
       sample(SX + shiftPx, SY, c0); sample(SX, SY, c1); sample(SX - shiftPx, SY, c2);
       let r = c0[0], gg = c1[1], b = c2[2], a = Math.max(c0[3], c1[3], c2[3]);
       if (ghostA > 0) { sample(SX - ghostDx, SY, cg); r += cg[0] * ghostA; gg += cg[1] * ghostA; b += cg[2] * ghostA; a = Math.max(a, cg[3] * ghostA); }
@@ -385,10 +385,10 @@ function renderSignal(opts) {
       r = clamp01((r - 0.5) * con + 0.5 + bri); gg = clamp01((gg - 0.5) * con + 0.5 + bri); b = clamp01((b - 0.5) * con + 0.5 + bri);
       const lum = 0.299 * r + 0.587 * gg + 0.114 * b;
       if (p.colorMode === "phosphor") {
-        const hot = Math.max(0, lum - 0.72) * 2.2;   // sehr helle Stellen brennen ins Weiße
+        const hot = Math.max(0, lum - 0.72) * 2.2;   // very bright areas burn to white
         r = clamp01(tint[0] * lum * 1.15 + hot); gg = clamp01(tint[1] * lum * 1.15 + hot); b = clamp01(tint[2] * lum * 1.15 + hot);
       } else if (p.colorMode === "gradient") {
-        // Verlauf: Schwarz → dunkler Ton → Mitte → heller Ton
+        // gradient: black → dark tone → middle → light tone
         const l = clamp01(lum * 1.08);
         let c0r, c0g, c0b, c1r, c1g, c1b, f;
         if (l < 0.33) { f = l / 0.33; c0r = 0; c0g = 0; c0b = 0; c1r = lowC[0]; c1g = lowC[1]; c1b = lowC[2]; }
@@ -398,7 +398,7 @@ function renderSignal(opts) {
       }
       if (ilc > 0 && odd) { const d = 1 - ilc * 0.18; r *= d; gg *= d; b *= d; }
       if (Bf) { const v = Bf.at((SX - pitch * 7 - ox) / ps - 0.5, (SY - pitch * 4 - oy) / ps - 0.5) * burn; r = clamp01(r + v * 0.8); gg = clamp01(gg + v * 0.9); b = clamp01(b + v * 0.75); }
-      // Zeilen-Signal: Linienstärke nach Helligkeit, bei Welle/Wirbel biegt die Helligkeit die Zeilen
+      // line signal: thickness follows brightness; with wave/swirl the brightness bends the lines
       let m = 1;
       if (lineMode) {
         let t = t0;
@@ -420,7 +420,7 @@ function renderSignal(opts) {
         r = clamp01(r * 1.3); gg = clamp01(gg * 1.3); b = clamp01(b * 1.3);
       }
       if (roll > 0) { const d = (Y - rollC) / rollW, rb = 1 - 0.18 * roll + 0.45 * roll * Math.exp(-d * d); r = clamp01(r * rb); gg = clamp01(gg * rb); b = clamp01(b * rb); }
-      // Rauschen und Schnee (am Ziel-Pixel verankert, darum gleich in Vorschau-Detail und Ergebnis)
+      // noise and snow (anchored to the target pixel, so detail preview and result match)
       if (nz > 0) {
         const Xi = Math.floor(X), Yi = Math.floor(Y);
         const gr = (hash2(Xi, Yi, s + 40) - 0.5) * 0.32 * nz;
@@ -428,9 +428,9 @@ function renderSignal(opts) {
         r = clamp01(r + gr + snow); gg = clamp01(gg + gr + snow); b = clamp01(b + gr + snow);
       }
       if (opaque) {
-        const k2 = m * a;   // ganzes Dokument: Lücken schwarz; durchsichtige Stellen zählen als Schwarz
+        const k2 = m * a;   // whole document: gaps black; transparent areas count as black
         r *= k2; gg *= k2; b *= k2;
-        // Einblendung: Pixelschrift mit Schatten, sitzt im Signal (folgt Wölbung, bekommt Maske/Scanlines/Leuchten)
+        // overlay: pixel font with a shadow, sits in the signal (follows the curvature, gets mask/scanlines/bloom)
         for (const el of osd) {
           if (osdCover(el, SX0 - el.u * 0.7, SY - el.u * 0.7)) { r *= 0.15; gg *= 0.15; b *= 0.15; }
           if (osdCover(el, SX0, SY)) { r = el.color[0]; gg = el.color[1]; b = el.color[2]; }
@@ -444,7 +444,7 @@ function renderSignal(opts) {
   return out;
 }
 
-// Leuchten: helle Teile des Signals weichzeichnen (für den Mischmodus „Negativ multiplizieren“)
+// bloom: blur the bright parts of the signal (for the Screen blend mode)
 function renderBloom(opts, signal) {
   const g = geometry(opts), p = g.p, { w, h, N } = g;
   if (p.bloom <= 0) return null;
@@ -458,13 +458,13 @@ function renderBloom(opts, signal) {
   return out;
 }
 
-// Phosphor-Maske (sitzt auf dem Glas, folgt der Wölbung nicht)
+// phosphor mask (sits on the glass, doesn't follow the curvature)
 function renderMask(opts) {
   const g = geometry(opts), p = g.p, { w, h, N, ox, oy, ps, pitch } = g;
   if (p.mask === "none" || p.maskStrength <= 0) return null;
   const out = new Uint8ClampedArray(N * 4);
-  const cw = Math.max(3, pitch * p.maskSize / 100 * 1.5);   // Breite eines RGB-Tripels in Ziel-Pixeln (mind. 1 px je Farbe)
-  const lo = 0.16, flat = cw / 3 / ps < 1;                 // in der verkleinerten Vorschau zu fein -> Mittelwert statt Moiré
+  const cw = Math.max(3, pitch * p.maskSize / 100 * 1.5);   // width of an RGB triple in target pixels (at least 1 px per colour)
+  const lo = 0.16, flat = cw / 3 / ps < 1;                 // too fine in the downsampled preview -> average instead of moiré
   const flatV = { aperture: (1 + 2 * lo) / 3, slot: (1 + 2 * lo) / 3 * 0.86, shadow: 0.36, led: 0.4 }[p.mask];
   for (let y = 0; y < h; y++) {
     const Y = oy + (y + 0.5) * ps;
@@ -498,7 +498,7 @@ function renderMask(opts) {
   return out;
 }
 
-// Scanlines: dunkle Lücken zwischen den Zeilen, folgen der Wölbung
+// scanlines: dark gaps between the lines, follow the curvature
 function renderScan(opts) {
   const g = geometry(opts), p = g.p, { w, h, N, ox, oy, ps, pitch } = g;
   if (p.scanlines <= 0) return null;
@@ -518,7 +518,7 @@ function renderScan(opts) {
   return out;
 }
 
-// Glas: Vignette und runde Ecken
+// glass: vignette and round corners
 function renderGlass(opts) {
   const g = geometry(opts), p = g.p, { w, h, N, ox, oy, ps, fullW, fullH } = g;
   if (p.vignette <= 0 && p.corners <= 0 && p.moire <= 0) return null;
@@ -537,8 +537,8 @@ function renderGlass(opts) {
       }
       let gR = val, gG = val, gB = val;
       if (mo > 0) {
-        // Moiré wie beim Abfotografieren: gebogene, leicht farbige Interferenzstreifen
-        // zwei leicht verschiedene Raster überlagern sich -> breite, gebogene Schwebungs-Bänder
+        // moiré like a photographed screen: curved, slightly coloured interference stripes
+        // two slightly different grids overlap -> wide, curved beat bands
         const ph = 6.283 * (X * fx + Y * fy) + 7 * noise2(X / (fullH * 0.4), Y / (fullH * 0.4), g.s + 61) + 1.5 * Math.sin(6.283 * (X * fy - Y * fx) * 0.35);
         const k = mo * 0.36 * (0.55 + 0.45 * noise2(X / (fullH * 0.25), Y / (fullH * 0.25), g.s + 62));
         gR *= 1 - k * Math.pow(0.5 + 0.5 * Math.cos(ph), 2); gG *= 1 - k * Math.pow(0.5 + 0.5 * Math.cos(ph + 2.1), 2); gB *= 1 - k * Math.pow(0.5 + 0.5 * Math.cos(ph + 4.2), 2);
@@ -549,7 +549,7 @@ function renderGlass(opts) {
   return out;
 }
 
-// Reflex: Spiegelung eines Fensters oben auf dem Glas, ein schräger Glanz und ein Lichtsaum am Röhrenrand
+// reflex: reflection of a window at the top of the glass, a diagonal sheen and a light rim at the tube edge
 function renderReflex(opts) {
   const g = geometry(opts), p = g.p, { w, h, N, ox, oy, ps, fullW, fullH } = g;
   if (p.reflection <= 0) return null;
@@ -573,23 +573,23 @@ function renderReflex(opts) {
   return out;
 }
 
-// Die Ebenen von oben nach unten, so wie sie in der Gruppe liegen. clip = Schnittmaske auf das Signal.
+// the layers top to bottom, as they lie in the group. clip = clipping mask onto the signal.
 const LAYERS = [
-  { key: "bloom", name: "Leuchten", mode: "screen", opacity: (p) => p.bloom, clip: false },
+  { key: "bloom", name: "Bloom", mode: "screen", opacity: (p) => p.bloom, clip: false },
   { key: "reflex", name: "Reflex", mode: "screen", opacity: (p) => p.reflection, clip: true },
-  { key: "glass", name: "Glas", mode: "multiply", opacity: () => 100, clip: true },
+  { key: "glass", name: "Glass", mode: "multiply", opacity: () => 100, clip: true },
   { key: "scan", name: "Scanlines", mode: "multiply", opacity: (p) => p.scanlines, clip: true },
-  { key: "mask", name: "Maske", mode: "multiply", opacity: (p) => p.maskStrength, clip: true },
+  { key: "mask", name: "Mask", mode: "multiply", opacity: (p) => p.maskStrength, clip: true },
   { key: "signal", name: "Signal", mode: "normal", opacity: () => 100, clip: false },
 ];
-// alles auf einmal (Vorschau, Tests)
+// everything at once (preview, tests)
 function render(opts) {
   const signal = renderSignal(opts);
   return { signal, bloom: renderBloom(opts, signal), mask: renderMask(opts), scan: renderScan(opts), glass: renderGlass(opts), reflex: renderReflex(opts), params: sanitize(opts.params) };
 }
 
-// Ebenen wie in Photoshop übereinanderlegen (Vorschau und Prüfung).
-// base: RGB darunter (Uint8, 3 Kanäle) oder null = schwarz; original: Bild ohne Effekt für die Gruppen-Deckkraft
+// stack the layers like Photoshop does (preview and verify).
+// base: RGB below (Uint8, 3 channels) or null = black; original: image without the effect for the group opacity
 function composite(res, w, h, base, original) {
   const p = res.params, N = w * h, out = new Uint8Array(N * 3);
   const mo = p.maskStrength / 100, so = p.scanlines / 100, bo = p.bloom / 100, ro = p.reflection / 100, st = p.strength / 100;
@@ -611,7 +611,7 @@ function composite(res, w, h, base, original) {
   return out;
 }
 
-// welche Ebenen bei diesen Einstellungen entstehen
+// which layers these settings create
 function layerKeys(p) {
   p = sanitize(p);
   const has = { signal: true, bloom: p.bloom > 0, mask: p.mask !== "none" && p.maskStrength > 0, scan: p.scanlines > 0,
