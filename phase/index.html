@@ -82,33 +82,15 @@
             <span class="field-label">Hell</span><div id="swatch-tintHigh" class="swatch" title="Helle Töne"></div><span id="hexl-tintHigh" class="hex-label"></span>
           </div>
         </div>
-        <div id="secColor"></div>
       </div>
     </div>
 
     <div class="sec" data-sec="screen">
-      <div class="sec-head"><span class="sec-title">Bildschirm</span><span class="sec-meta"></span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
+      <div class="sec-head"><span class="sec-title">Bildschirm</span><span class="sec-meta">Maske, Scanlines, Wölbung</span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
       <div class="sec-body">
         <div class="field stack"><span class="field-label">Phosphor-Maske</span><div class="seg wrap" id="maskSeg"></div></div>
         <div id="secMask"></div>
         <div id="secScreen"></div>
-      </div>
-    </div>
-
-    <div class="sec" data-sec="tube">
-      <div class="sec-head"><span class="sec-title">Röhre</span><span class="sec-meta">Wölbung, Reflex, Versatz</span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
-      <div class="sec-body"><div id="secTube"></div></div>
-    </div>
-
-    <div class="sec" data-sec="noise">
-      <div class="sec-head"><span class="sec-title">Störungen</span><span class="sec-meta">Rauschen, Tracking, Glitch</span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
-      <div class="sec-body">
-        <div id="secNoise"></div>
-        <div class="row">
-          <span class="field-label">Zufall</span>
-          <input type="text" id="seed" class="num">
-          <div class="btn small" id="dice" title="Neues Zufallsmuster">Würfeln</div>
-        </div>
       </div>
     </div>
 
@@ -126,6 +108,25 @@
           </div>
           <div id="secOsd"></div>
           <div class="hint">Pixelschrift wie bei Fernseher und Videorekorder (A–Z, 0–9, ▶, ●, : . - / !). Nur bei „Ganzes Dokument“.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec" data-sec="fine">
+      <div class="sec-head"><span class="sec-title">Feintuning</span><span class="sec-meta">alle weiteren Regler</span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
+      <div class="sec-body">
+        <div class="fine-label">Signal</div>
+        <div id="secFineSignal"></div>
+        <div class="fine-label">Bild und Maske</div>
+        <div id="secFineColor"></div>
+        <div class="fine-label">Röhre</div>
+        <div id="secFineTube"></div>
+        <div class="fine-label">Störungen</div>
+        <div id="secFineNoise"></div>
+        <div class="row">
+          <span class="field-label">Zufall</span>
+          <input type="text" id="seed" class="num">
+          <div class="btn small" id="dice" title="Neues Zufallsmuster">Würfeln</div>
         </div>
       </div>
     </div>

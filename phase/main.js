@@ -33,31 +33,31 @@ const SLIDERS = [
   { key: "strength", label: "Deckkraft", min: 0, max: 100, step: 1, unit: "%", parent: "secStrengthTop" },
   { key: "lines", label: "Zeilen", min: 40, max: 600, step: 1, unit: "", parent: "secSignal", tip: "Zeilen über die ganze Bildhöhe – wie die Auflösung eines Fernsehers" },
   { key: "wave", label: "Wellen", min: 0, max: 100, step: 1, unit: "%", parent: "secSignal", show: waveMode, tip: "Wie stark helle Stellen die Zeilen verbiegen" },
-  { key: "smooth", label: "Glättung", min: 0, max: 100, step: 1, unit: "%", parent: "secSignal", show: waveMode, tip: "Weichere, größere Wellen" },
-  { key: "thickness", label: "Linienstärke", min: 10, max: 100, step: 1, unit: "%", parent: "secSignal", show: lineMode, tip: "Stärke der Zeilen an den hellsten Stellen" },
-  { key: "dots", label: "Punkte", min: 0, max: 100, step: 1, unit: "%", parent: "secSignal", show: lineMode, tip: "Zerlegt die Zeilen in leuchtende Punkte" },
-  { key: "contrast", label: "Kontrast", min: -50, max: 100, step: 1, unit: "", parent: "secColor" },
-  { key: "brightness", label: "Helligkeit", min: -50, max: 50, step: 1, unit: "", parent: "secColor" },
-  { key: "maskSize", label: "Maskengröße", min: 50, max: 400, step: 5, unit: "%", parent: "secMask", show: (p) => p.mask !== "none" },
+  { key: "smooth", label: "Glättung", min: 0, max: 100, step: 1, unit: "%", parent: "secFineSignal", show: waveMode, tip: "Weichere, größere Wellen" },
+  { key: "thickness", label: "Linienstärke", min: 10, max: 100, step: 1, unit: "%", parent: "secFineSignal", show: lineMode, tip: "Stärke der Zeilen an den hellsten Stellen" },
+  { key: "dots", label: "Punkte", min: 0, max: 100, step: 1, unit: "%", parent: "secFineSignal", show: lineMode, tip: "Zerlegt die Zeilen in leuchtende Punkte" },
+  { key: "contrast", label: "Kontrast", min: -50, max: 100, step: 1, unit: "", parent: "secFineColor" },
+  { key: "brightness", label: "Helligkeit", min: -50, max: 50, step: 1, unit: "", parent: "secFineColor" },
+  { key: "maskSize", label: "Maskengröße", min: 50, max: 400, step: 5, unit: "%", parent: "secFineColor", show: (p) => p.mask !== "none" },
   { key: "maskStrength", label: "Masken-Stärke", min: 0, max: 100, step: 1, unit: "%", parent: "secMask", show: (p) => p.mask !== "none" },
   { key: "scanlines", label: "Scanlines", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
   { key: "bloom", label: "Leuchten", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
   { key: "bloomRadius", label: "Leucht-Radius", min: 5, max: 100, step: 1, unit: "%", parent: "secScreen", show: (p) => p.bloom > 0, sub: true },
-  { key: "curvature", label: "Wölbung", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
-  { key: "corners", label: "Runde Ecken", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
-  { key: "vignette", label: "Vignette", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
-  { key: "tilt", label: "Schräge", min: 0, max: 100, step: 1, unit: "%", parent: "secTube", tip: "Wie schräg abfotografiert: leicht gedreht und trapezförmig" },
-  { key: "moire", label: "Moiré", min: 0, max: 100, step: 1, unit: "%", parent: "secTube", tip: "Farbige Streifen wie auf einem abfotografierten Bildschirm" },
-  { key: "reflection", label: "Reflex", min: 0, max: 100, step: 1, unit: "%", parent: "secTube", tip: "Spiegelung auf dem Glas und Lichtsaum am Röhrenrand" },
-  { key: "rgbShift", label: "RGB-Versatz", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
-  { key: "ghost", label: "Geisterbild", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
-  { key: "noise", label: "Rauschen", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise" },
-  { key: "rollbar", label: "Bildlauf-Balken", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise" },
-  { key: "jitter", label: "Tracking", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise", tip: "Zeilen zittern seitlich wie bei einem Videoband" },
-  { key: "glitch", label: "Glitch", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise", tip: "Verschobene, grob gerasterte Blöcke" },
-  { key: "interlace", label: "Halbbild-Versatz", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise", tip: "Jede zweite Zeile seitlich verschoben, wie bei abgefilmten Fernsehern" },
-  { key: "wobble", label: "Schwingen", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise", tip: "Das ganze Bild schwingt wellenförmig – schlechter Empfang" },
-  { key: "burnIn", label: "Einbrennen", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise", tip: "Schwaches, festes Geisterbild der hellen Bildteile" },
+  { key: "curvature", label: "Wölbung", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
+  { key: "corners", label: "Runde Ecken", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube" },
+  { key: "vignette", label: "Vignette", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
+  { key: "tilt", label: "Schräge", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube", tip: "Wie schräg abfotografiert: leicht gedreht und trapezförmig" },
+  { key: "moire", label: "Moiré", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube", tip: "Farbige Streifen wie auf einem abfotografierten Bildschirm" },
+  { key: "reflection", label: "Reflex", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube", tip: "Spiegelung auf dem Glas und Lichtsaum am Röhrenrand" },
+  { key: "rgbShift", label: "RGB-Versatz", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube" },
+  { key: "ghost", label: "Geisterbild", min: 0, max: 100, step: 1, unit: "%", parent: "secFineTube" },
+  { key: "noise", label: "Rauschen", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
+  { key: "rollbar", label: "Bildlauf-Balken", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise" },
+  { key: "jitter", label: "Tracking", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Zeilen zittern seitlich wie bei einem Videoband" },
+  { key: "glitch", label: "Glitch", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Verschobene, grob gerasterte Blöcke" },
+  { key: "interlace", label: "Halbbild-Versatz", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Jede zweite Zeile seitlich verschoben, wie bei abgefilmten Fernsehern" },
+  { key: "wobble", label: "Schwingen", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Das ganze Bild schwingt wellenförmig – schlechter Empfang" },
+  { key: "burnIn", label: "Einbrennen", min: 0, max: 100, step: 1, unit: "%", parent: "secFineNoise", tip: "Schwaches, festes Geisterbild der hellen Bildteile" },
   { key: "osdSize", label: "Schriftgröße", min: 1.5, max: 12, step: 0.5, unit: "%", parent: "secOsd" },
 ];
 
@@ -362,7 +362,7 @@ function syncUI() {
 }
 
 const SEC_KEY = "msphase.sections.v1";
-const SEC_DEFAULT = { looks: true, signal: true, color: true, screen: true, tube: false, noise: false, osd: false, more: false };
+const SEC_DEFAULT = { looks: true, signal: true, color: true, screen: true, osd: false, fine: false, more: false };
 function bindControls() {
   UI.sections(SEC_KEY, SEC_DEFAULT);
   UI.bindSwitch("previewOriginal", () => renderPreview());
