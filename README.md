@@ -1,19 +1,19 @@
 <p align="center">
-  <img src="docs/images/hero.png" alt="MS Phase" width="100%">
+  <img src="docs/images/hero.png" alt="Morgenstern Phase" width="100%">
 </p>
 
 <p align="center">
   <b>Röhrenfernseher-Look für Photoshop: Zeilen, die sich mit dem Bild biegen, Phosphor-Masken, Scanlines,
   Leuchten, Wölbung und Störungen – für das ganze Dokument oder einzelne Ebenen, nicht-destruktiv.</b><br>
   <sub>Photoshop 2023 (24.2) oder neuer · UXP-Panel</sub><br>
-  <sub><b>MS</b> steht für <b>Morgenstern</b>: freie Photoshop-Tools · <a href="https://github.com/M0rgenst3rn/ms-distress">MS Distress</a> · <a href="https://github.com/M0rgenst3rn/ms-printer">MS Printer</a> · <a href="https://github.com/M0rgenst3rn/ms-render">MS Render</a> · <b>MS Phase</b> · <a href="https://github.com/M0rgenst3rn/ms-glow">MS Glow</a></sub>
+  <sub>Freie Photoshop-Tools von <b>Morgenstern</b> · <a href="https://github.com/M0rgenst3rn/ms-distress">Morgenstern Distress</a> · <a href="https://github.com/M0rgenst3rn/ms-printer">Morgenstern Printer</a> · <a href="https://github.com/M0rgenst3rn/ms-render">Morgenstern Render</a> · <b>Morgenstern Phase</b> · <a href="https://github.com/M0rgenst3rn/ms-glow">Morgenstern Glow</a></sub>
 </p>
 
 ---
 
-## Was ist MS Phase?
+## Was ist Morgenstern Phase?
 
-MS Phase verwandelt dein Artwork in ein Bild auf einer Röhre. Das Signal läuft in Zeilen über den Schirm,
+Morgenstern Phase verwandelt dein Artwork in ein Bild auf einer Röhre. Das Signal läuft in Zeilen über den Schirm,
 die je nach Modus gerade bleiben, mit der Helligkeit dicker werden oder sich wellenförmig um Formen legen.
 Dazu kommen Phosphor-Masken, Scanlines, Leuchten, Wölbung, Vignette, Farbverläufe, der Look eines
 abfotografierten Bildschirms, Störungen wie Rauschen, Halbbild-Versatz, Schwingen und Glitch-Blöcke sowie
@@ -181,5 +181,5 @@ Verbindung zu Adobe.
 
 ---
 
-<p align="center"><sub>MS Phase · ein Tool von <b>Morgenstern</b><br>
+<p align="center"><sub>Morgenstern Phase<br>
 Entwickelt von Linus Leinberger</sub></p>
