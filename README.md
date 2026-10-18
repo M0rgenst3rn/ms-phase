@@ -6,7 +6,7 @@
   <b>Röhrenfernseher-Look für Photoshop: Zeilen, die sich mit dem Bild biegen, Phosphor-Masken, Scanlines,
   Leuchten, Wölbung und Störungen – für das ganze Dokument oder einzelne Ebenen, nicht-destruktiv.</b><br>
   <sub>Photoshop 2023 (24.2) oder neuer · UXP-Panel</sub><br>
-  <sub><b>MS</b> steht für <b>Morgenstern</b>: freie Photoshop-Tools · <a href="https://github.com/M0rgenst3rn/ms-distress">MS Distress</a> · <a href="https://github.com/M0rgenst3rn/ms-printer">MS Printer</a> · <a href="https://github.com/M0rgenst3rn/ms-render">MS Render</a> · <b>MS Phase</b></sub>
+  <sub><b>MS</b> steht für <b>Morgenstern</b>: freie Photoshop-Tools · <a href="https://github.com/M0rgenst3rn/ms-distress">MS Distress</a> · <a href="https://github.com/M0rgenst3rn/ms-printer">MS Printer</a> · <a href="https://github.com/M0rgenst3rn/ms-render">MS Render</a> · <b>MS Phase</b> · <a href="https://github.com/M0rgenst3rn/ms-glow">MS Glow</a></sub>
 </p>
 
 ---
