@@ -45,12 +45,19 @@ const SLIDERS = [
   { key: "curvature", label: "Wölbung", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
   { key: "corners", label: "Runde Ecken", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
   { key: "vignette", label: "Vignette", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
+  { key: "tilt", label: "Schräge", min: 0, max: 100, step: 1, unit: "%", parent: "secTube", tip: "Wie schräg abfotografiert: leicht gedreht und trapezförmig" },
+  { key: "moire", label: "Moiré", min: 0, max: 100, step: 1, unit: "%", parent: "secTube", tip: "Farbige Streifen wie auf einem abfotografierten Bildschirm" },
+  { key: "reflection", label: "Reflex", min: 0, max: 100, step: 1, unit: "%", parent: "secTube", tip: "Spiegelung auf dem Glas und Lichtsaum am Röhrenrand" },
   { key: "rgbShift", label: "RGB-Versatz", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
   { key: "ghost", label: "Geisterbild", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
   { key: "noise", label: "Rauschen", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise" },
   { key: "rollbar", label: "Bildlauf-Balken", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise" },
   { key: "jitter", label: "Tracking", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise", tip: "Zeilen zittern seitlich wie bei einem Videoband" },
   { key: "glitch", label: "Glitch", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise", tip: "Verschobene, grob gerasterte Blöcke" },
+  { key: "interlace", label: "Halbbild-Versatz", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise", tip: "Jede zweite Zeile seitlich verschoben, wie bei abgefilmten Fernsehern" },
+  { key: "wobble", label: "Schwingen", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise", tip: "Das ganze Bild schwingt wellenförmig – schlechter Empfang" },
+  { key: "burnIn", label: "Einbrennen", min: 0, max: 100, step: 1, unit: "%", parent: "secNoise", tip: "Schwaches, festes Geisterbild der hellen Bildteile" },
+  { key: "osdSize", label: "Schriftgröße", min: 1.5, max: 12, step: 0.5, unit: "%", parent: "secOsd" },
 ];
 
 let params = loadParams();
@@ -304,6 +311,8 @@ function buildSliders() {
 function buildStatic() {
   $("modeSeg").innerHTML = Core.MODES.map((m) => `<div class="seg-btn" data-mode="${m.id}" title="${m.hint}">${m.name}</div>`).join("");
   $("mask").innerHTML = Core.MASKS.map((m) => `<option value="${m.id}">${m.name}</option>`).join("");
+  $("osd").innerHTML = Core.OSDS.map((o) => `<option value="${o.id}">${o.name}</option>`).join("");
+  $("gradPresets").innerHTML = Core.GRADIENTS.map((g, i) => `<div class="grad" data-grad="${i}" title="${g.name}"><div style="background-color:${g.low}"></div><div style="background-color:${g.mid}"></div><div style="background-color:${g.high}"></div></div>`).join("");
   $("tintSwatches").innerHTML = Core.TINTS.map((t) => `<div class="sw" data-tint="${t.id}" title="${t.name}" style="background-color:${t.id}"></div>`).join("");
   const grid = $("lookGrid");
   grid.innerHTML = "";
@@ -349,8 +358,11 @@ function syncUI() {
   $("lookName").textContent = activeLook ? "· " + Core.PRESETS.find((x) => x.id === activeLook).name : "";
   $("modeHint").textContent = (Core.MODES.find((m) => m.id === params.mode) || {}).hint || "";
   $("tintRow").className = params.colorMode === "phosphor" ? "row" : "row hidden";
-  $("hex-tint").value = params.tint;
-  $("swatch-tint").style.backgroundColor = params.tint;
+  $("gradRow").className = params.colorMode === "gradient" ? "" : "hidden";
+  for (const [id, key] of COLOR_FIELDS) { $("hex-" + id).value = params[key]; $("swatch-" + id).style.backgroundColor = params[key]; }
+  $("osd").value = params.osd;
+  $("osdControls").className = params.osd === "none" ? "hidden" : "";
+  if (document.activeElement !== $("osdText")) $("osdText").value = params.osdText;
   $("mask").value = params.mask;
   $("seed").value = String(params.seed);
   $("apply").textContent = target === "document" ? "Look anwenden" : "Auf Ebene anwenden";
@@ -365,12 +377,23 @@ function bindControls() {
   }));
   document.querySelectorAll("#previewModeSeg .seg-btn").forEach((el) => el.addEventListener("click", () => { previewMode = el.dataset.mode; syncUI(); refreshPreviewSource(); }));
   $("mask").addEventListener("change", (e) => { params.mask = e.target.value; activeLook = null; syncUI(); changed(); });
-  $("hex-tint").addEventListener("change", (e) => {
-    let v = String(e.target.value).trim(); if (v[0] !== "#") v = "#" + v;
-    if (/^#[0-9a-f]{6}$/i.test(v)) params.tint = v.toLowerCase();
-    activeLook = null; syncUI(); changed();
+  for (const [id, key] of COLOR_FIELDS) {
+    $("hex-" + id).addEventListener("change", (e) => {
+      let v = String(e.target.value).trim(); if (v[0] !== "#") v = "#" + v;
+      if (/^#[0-9a-f]{6}$/i.test(v)) params[key] = v.toLowerCase();
+      activeLook = null; syncUI(); changed();
+    });
+    $("swatch-" + id).addEventListener("click", () => pickColor(key));
+  }
+  document.querySelectorAll(".grad").forEach((el) => el.addEventListener("click", () => {
+    const g = Core.GRADIENTS[Number(el.dataset.grad)];
+    Object.assign(params, { tintLow: g.low, tint: g.mid, tintHigh: g.high }); activeLook = null; syncUI(); changed();
+  }));
+  $("osd").addEventListener("change", (e) => {
+    params.osd = e.target.value; activeLook = null; syncUI(); changed();
+    if (params.osd !== "none" && target === "layers") setStatus("Einblendungen erscheinen nur bei „Ganzes Dokument“.");
   });
-  $("swatch-tint").addEventListener("click", pickTint);
+  $("osdText").addEventListener("input", (e) => { params.osdText = Core.cleanOsdText(e.target.value); activeLook = null; changed(); });
   $("seed").addEventListener("change", (e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) params.seed = Math.max(0, Math.min(99999, v)); syncUI(); changed(); });
   $("dice").addEventListener("click", () => { params.seed = Math.floor(Math.random() * 99999); syncUI(); changed(); });
   $("previewOriginal").addEventListener("change", () => renderPreview());
@@ -407,15 +430,17 @@ function bindControls() {
   $("selfTest").addEventListener("click", runSelfTest);
 }
 
-async function pickTint() {
-  const c0 = hexToRgb(params.tint);
+// Farbfelder: [Element-ID, Parameter]
+const COLOR_FIELDS = [["tint", "tint"], ["tint2", "tint"], ["tintLow", "tintLow"], ["tintHigh", "tintHigh"], ["osdColor", "osdColor"]];
+async function pickColor(key) {
+  const c0 = hexToRgb(params[key]);
   try {
     let res;
     await core.executeAsModal(async () => {
       res = await batchPlay([{ _obj: "showColorPicker", _target: { _ref: "application" }, context: "MS Phase", color: { _obj: "RGBColor", red: c0.r, grain: c0.g, blue: c0.b } }], {});
     }, { commandName: "Farbe wählen" });
     const c = res && res[0] && (res[0].RGBFloatColor || res[0].color);
-    if (c && c.red !== undefined) { params.tint = rgbToHex(c.red, c.grain !== undefined ? c.grain : c.green, c.blue); activeLook = null; syncUI(); changed(); }
+    if (c && c.red !== undefined) { params[key] = rgbToHex(c.red, c.grain !== undefined ? c.grain : c.green, c.blue); activeLook = null; syncUI(); changed(); }
   } catch (e) { setStatus("Farbwähler nicht verfügbar – Hex-Wert eintippen.", true); }
 }
 
@@ -601,6 +626,7 @@ async function makeTvLayers(doc, o, off) {
     else if (def.key === "bloom") buf = Core.renderBloom(o, signal);
     else if (def.key === "mask") buf = Core.renderMask(o);
     else if (def.key === "scan") buf = Core.renderScan(o);
+    else if (def.key === "reflex") buf = Core.renderReflex(o);
     else buf = Core.renderGlass(o);
     if (!buf) continue;
     made.push({ id: await makePixelLayer(doc, def.name, buf, o.w, o.h, off, def.mode, layerOpacity(def, p, o.opaque === false)), def });
@@ -785,9 +811,8 @@ function pixelDiff(exp, act) {
   return n ? Math.round(big / n * 1000) / 10 : 0;
 }
 function expectedLayers(o) {
-  const p = Core.sanitize(o.params), sig = Core.renderSignal(o);
-  const has = { signal: true, bloom: p.bloom > 0, mask: p.mask !== "none" && p.maskStrength > 0, scan: p.scanlines > 0, glass: p.vignette > 0 || p.corners > 0 };
-  return { signal: sig, defs: Core.LAYERS.filter((d) => has[d.key]) };
+  const sig = Core.renderSignal(o), keys = Core.layerKeys(o.params);
+  return { signal: sig, defs: Core.LAYERS.filter((d) => keys.indexOf(d.key) >= 0) };
 }
 async function checkGroup(doc, g, o, b, sourceId) {
   const fail = [], p = Core.sanitize(o.params), kids = Array.from(g.layers);
@@ -913,7 +938,12 @@ async function runSelfTest() {
     for (const pr of Core.PRESETS) await docCase(`Look ${pr.name}`, Object.assign({ seed: 4242 }, pr.p));
     for (const m of Core.MODES) await docCase(`Signal ${m.name}`, { mode: m.id });
     for (const m of Core.MASKS) await docCase(`Maske ${m.name}`, { mode: "clear", mask: m.id, maskStrength: 70 });
-    await docCase("Grenzen: 40 Zeilen, alles an", { lines: 40, curvature: 100, corners: 100, vignette: 100, glitch: 100, jitter: 100, noise: 100, rollbar: 100, ghost: 100, rgbShift: 100, dots: 100 });
+    await docCase("Farbverlauf", { colorMode: "gradient", tintLow: "#3a0a6b", tint: "#ff3fa4", tintHigh: "#ffe2a8" });
+    await docCase("Abgefilmt: Schräge, Moiré, Reflex", { mode: "clear", tilt: 80, moire: 90, reflection: 70, curvature: 30 });
+    await docCase("Halbbild, Schwingen, Einbrennen", { interlace: 80, wobble: 70, burnIn: 80 });
+    for (const o of Core.OSDS.filter((x) => x.id !== "none")) await docCase(`Einblendung ${o.name}`, { osd: o.id, osdSize: 6 });
+    await docCase("Einblendung mit eigenem Text", { osd: "channel", osdText: "SENDER 7 ▶" });
+    await docCase("Grenzen: 40 Zeilen, alles an", { lines: 40, curvature: 100, corners: 100, vignette: 100, glitch: 100, jitter: 100, noise: 100, rollbar: 100, ghost: 100, rgbShift: 100, dots: 100, tilt: 100, moire: 100, reflection: 100, interlace: 100, wobble: 100, burnIn: 100, osd: "cctv", osdSize: 12 });
     await docCase("Grenzen: 600 Zeilen, alles aus", { lines: 600, bloom: 0, scanlines: 0, vignette: 0, corners: 0, noise: 0, rgbShift: 0 });
     await docCase("Gesamt-Deckkraft 30", { strength: 30 });
     await check("Erneut anwenden ersetzt die Gruppe", async () => {
@@ -949,7 +979,7 @@ async function runSelfTest() {
       await applyEffect(false);
       return verifyNow(doc, params);
     });
-    await layerCase("Ebene: Text", [textId], { mode: "wave" });
+    await layerCase("Ebene: Text", [textId], { mode: "wave", reflection: 50, osd: "play" });
     await layerCase("Ebene: Text erneut (über die Gruppe)", [textId], { mode: "clear", mask: "aperture", maskStrength: 80, curvature: 40, corners: 30 });
     await check("Ebene: genau eine Gruppe, Original sichtbar darunter", async () => {
       const gs = doc.layers.filter(isLayerGroup);

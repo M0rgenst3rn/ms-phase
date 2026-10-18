@@ -57,12 +57,27 @@
       <div class="section-title">Farbe</div>
       <div class="seg" id="colorSeg">
         <div class="seg-btn" data-color="original">Original</div>
-        <div class="seg-btn" data-color="phosphor">Phosphor (einfarbig)</div>
+        <div class="seg-btn" data-color="phosphor">Einfarbig</div>
+        <div class="seg-btn" data-color="gradient">Verlauf</div>
       </div>
       <div id="tintRow" class="row">
         <div id="tintSwatches" class="swatches"></div>
         <div id="swatch-tint" class="swatch" title="Eigene Farbe wählen"></div>
         <input type="text" id="hex-tint" class="hex" maxlength="7">
+      </div>
+      <div id="gradRow" class="hidden">
+        <div id="gradPresets" class="grad-presets"></div>
+        <div class="row">
+          <span class="ctl-label">Dunkel · Mitte · Hell</span>
+          <div id="swatch-tintLow" class="swatch" title="Dunkle Töne"></div>
+          <div id="swatch-tint2" class="swatch" title="Mitte"></div>
+          <div id="swatch-tintHigh" class="swatch" title="Helle Töne"></div>
+        </div>
+        <div class="row">
+          <input type="text" id="hex-tintLow" class="hex" maxlength="7">
+          <input type="text" id="hex-tint2" class="hex" maxlength="7">
+          <input type="text" id="hex-tintHigh" class="hex" maxlength="7">
+        </div>
       </div>
       <div id="secColor"></div>
     </div>
@@ -90,8 +105,26 @@
     </div>
 
     <div class="section">
+      <div class="section-title">Einblendung</div>
+      <div class="row"><span class="ctl-label">Art</span><select id="osd" class="grow"></select></div>
+      <div id="osdControls">
+        <div class="row">
+          <span class="ctl-label">Eigener Text</span>
+          <input type="text" id="osdText" class="grow" maxlength="28" placeholder="automatisch">
+        </div>
+        <div class="row">
+          <span class="ctl-label">Farbe</span>
+          <div id="swatch-osdColor" class="swatch" title="Farbe der Einblendung"></div>
+          <input type="text" id="hex-osdColor" class="hex" maxlength="7">
+        </div>
+        <div id="secOsd"></div>
+        <div class="hint">Pixelschrift wie bei Fernseher und Videorekorder (A–Z, 0–9, ▶, ●, : . - / !). Nur bei „Ganzes Dokument“.</div>
+      </div>
+    </div>
+
+    <div class="section">
       <div class="section-title">Ebenen im Dokument</div>
-      <div class="hint">MS Phase legt eine Gruppe mit echten Ebenen an: <b>Signal</b>, <b>Maske</b>, <b>Scanlines</b>, <b>Glas</b> (Multiplizieren) und <b>Leuchten</b> (Negativ multiplizieren). Bei Ebenen liegt das Original sichtbar unter dem Effekt in der Gruppe – Entfernen stellt es wieder her. Deckkraft und Mischmodus lassen sich auch direkt in Photoshop ändern.</div>
+      <div class="hint">MS Phase legt eine Gruppe mit echten Ebenen an: <b>Signal</b>, <b>Maske</b>, <b>Scanlines</b>, <b>Glas</b> (Multiplizieren), <b>Reflex</b> und <b>Leuchten</b> (Negativ multiplizieren). Bei Ebenen liegt das Original sichtbar unter dem Effekt in der Gruppe – Entfernen stellt es wieder her. Deckkraft und Mischmodus lassen sich auch direkt in Photoshop ändern.</div>
     </div>
 
     <div class="section">

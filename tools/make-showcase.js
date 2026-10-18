@@ -48,11 +48,20 @@ const W = 960, H = 540, base = scene(W, H, "MS PHASE");
   fs.writeFileSync(path.join(OUT, "hero.png"), encodePNG(w, h, tv(src, w, h, p), 3));
 }
 // 2) alle Looks
-sheet("looks.png", "15 Looks", Core.PRESETS.map((pr) => ({ img: save("look-" + pr.id, tv(base, W, H, Core.presetParams(pr.id)), W, H), label: pr.name })), 3, 560, 315);
+sheet("looks.png", Core.PRESETS.length + " Looks", Core.PRESETS.map((pr) => ({ img: save("look-" + pr.id, tv(base, W, H, Core.presetParams(pr.id)), W, H), label: pr.name })), 3, 560, 315);
 // 3) Signal-Modi
 sheet("signal.png", "Signal: Klar, Gerade, Welle, Wirbel", Core.MODES.map((m) => ({
   img: save("mode-" + m.id, tv(base, W, H, Object.assign({}, Core.DEFAULTS, { mode: m.id, wave: m.id === "swirl" ? 60 : 45 })), W, H), label: m.name, sub: m.hint,
 })), 2, 640, 360);
+// 3b) neue Effekte
+sheet("effekte.png", "Verlauf, Abgefilmt, Störungen, Einblendungen", [
+  { label: "Farbverlauf", sub: "Synthwave", p: Core.presetParams("synth") },
+  { label: "Abgefilmt", sub: "Schräge + Moiré + Reflex", p: Object.assign(Core.presetParams("filmed"), { moire: 75 }) },
+  { label: "Halbbild-Versatz", sub: "jede zweite Zeile verschoben", p: Object.assign({}, Core.DEFAULTS, { mode: "clear", colorMode: "original", interlace: 90, lines: 120, bloom: 30 }) },
+  { label: "Schwingen", sub: "schlechter Empfang", p: Object.assign({}, Core.DEFAULTS, { mode: "clear", colorMode: "original", wobble: 80, rgbShift: 40, bloom: 30 }) },
+  { label: "Einbrennen", sub: "festes Geisterbild", p: Object.assign(Core.presetParams("terminal"), { burnIn: 90 }) },
+  { label: "Einblendungen", sub: "Camcorder (● REC)", p: Core.presetParams("camcorder") },
+].map((t, n) => ({ img: save("fx-" + n, tv(base, W, H, t.p), W, H), label: t.label, sub: t.sub })), 3, 560, 315);
 // 4) Phosphor-Masken im Detail (1:1-Ausschnitt einer großen Szene)
 {
   const bw = 2400, bh = 1350, big = scene(bw, bh, "MS PHASE");

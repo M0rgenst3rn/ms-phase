@@ -15,8 +15,9 @@
 
 MS Phase verwandelt dein Artwork in ein Bild auf einer Röhre. Das Signal läuft in Zeilen über den Schirm,
 die je nach Modus gerade bleiben, mit der Helligkeit dicker werden oder sich wellenförmig um Formen legen.
-Dazu kommen Phosphor-Masken, Scanlines, Leuchten, Wölbung, Vignette und Störungen wie Rauschen,
-Bildlauf-Balken, Tracking-Zittern und Glitch-Blöcke.
+Dazu kommen Phosphor-Masken, Scanlines, Leuchten, Wölbung, Vignette, Farbverläufe, der Look eines
+abfotografierten Bildschirms, Störungen wie Rauschen, Halbbild-Versatz, Schwingen und Glitch-Blöcke sowie
+Einblendungen in Pixelschrift wie „▶ PLAY“ oder „● REC“.
 
 Alles wird prozedural berechnet, ganz ohne Bilddateien. Das Ergebnis landet als echte Ebenen mit Mischmodus in
 einer Gruppe, dein Artwork bleibt unverändert.
@@ -27,14 +28,17 @@ einer Gruppe, dein Artwork bleibt unverändert.
 
 - **Ganzes Dokument oder einzelne Ebenen**: Beides ist nicht-destruktiv und lässt sich jederzeit entfernen. Im Ebenen-Modus zeigt die Vorschau das Objekt in deinem Dokument
 - **4 Signal-Modi**: Klar, Gerade, Welle und Wirbel
-- **15 Looks** mit Vorschaubildern deines eigenen Motivs
+- **25 Looks** mit Vorschaubildern deines eigenen Motivs
+- **Farbverlauf**: Signal in zwei oder drei Farben je nach Helligkeit, mit fertigen Verläufen
+- **Abgefilmt**: Schräge, Moiré und Spiegelung wie auf einem Foto vom Bildschirm
+- **Einblendungen**: Kanal, Wiedergabe, Aufnahme, Lautstärke, Datum oder Überwachungskamera in Pixelschrift
 - **Phosphor-Masken**: Streifenmaske, Lochmaske, Schlitzmaske und LED-Raster
-- **Echte Ebenen**: Signal, Maske, Scanlines, Glas und Leuchten, jeweils mit Mischmodus und Deckkraft
+- **Echte Ebenen**: Signal, Maske, Scanlines, Glas, Reflex und Leuchten, jeweils mit Mischmodus und Deckkraft
 - **Vorschau** des ganzen Bilds oder als Detail in 1:1, dazu **Live** im Dokument
 - **Einstellungen in der Gruppe**: Gruppe auswählen, und das Panel lädt ihre Werte wieder
 - **Selbsttest**: 40 Prüfungen gegen das echte Photoshop-Ergebnis
 
-## 15 Looks
+## 25 Looks
 
 <p align="center"><img src="docs/images/looks.png" alt="Alle 15 Looks"></p>
 
@@ -55,6 +59,21 @@ Panel zeigen jeden Look mit deinem eigenen Dokument oder deiner Ebene.
 Die **Zeilenzahl** gilt für die ganze Bildhöhe, wie die Auflösung eines Fernsehers. So sieht der Look bei
 jeder Dokumentgröße gleich aus, und die kleine Vorschau zeigt dasselbe wie das Ergebnis.
 
+## Verlauf, Abgefilmt, Störungen, Einblendungen
+
+<p align="center"><img src="docs/images/effekte.png" alt="Die neuen Effekte"></p>
+
+- **Farbverlauf**: Statt einer Phosphor-Farbe läuft das Signal von Schwarz über einen dunklen Ton und die
+  Mitte bis zu einem hellen Ton, etwa Tiefsee, Synthwave, Glut, Gift oder Polarlicht. Alle drei Farben sind frei wählbar
+- **Abgefilmt**: Mit **Schräge**, **Moiré** und **Reflex** sieht das Bild aus wie mit dem Handy vom Bildschirm
+  fotografiert: leicht gedreht, mit farbigen Interferenzstreifen und einer Spiegelung auf dem Glas
+- **Halbbild-Versatz**: Jede zweite Zeile ist seitlich verschoben, wie bei einem abgefilmten Fernseher
+- **Schwingen**: Das ganze Bild schwingt wellenförmig, wie bei schlechtem Empfang
+- **Einbrennen**: Ein schwaches, festes Geisterbild der hellen Bildteile, wie bei alten Monitoren
+- **Einblendungen**: Pixelschrift im Signal, die sich mit der Röhre wölbt und mitleuchtet. Zur Auswahl stehen
+  Kanal (CH 03), Wiedergabe (▶ PLAY), Aufnahme (● REC mit Zeit), Lautstärke, Datum und Uhrzeit oder
+  Überwachungskamera. Text, Farbe und Größe sind einstellbar, nur bei „Ganzes Dokument“
+
 ## Phosphor-Masken
 
 <p align="center"><img src="docs/images/masks.png" alt="Phosphor-Masken im Detail"></p>
@@ -68,14 +87,17 @@ Die Maske ist das feine RGB-Raster eines echten Bildschirms. Am besten siehst du
 |---|---|---|
 | Oben | **Gesamt-Deckkraft** | Deckkraft der ganzen Gruppe |
 | Signal | **Zeilen / Wellen / Glättung / Linienstärke / Punkte** | Auflösung, Wellen und Form der Zeilen. Es erscheinen nur die Regler, die zum Modus passen |
-| Farbe | **Original oder Phosphor** | Originalfarben oder einfarbig in Cyan, Grün, Bernstein, Eisblau, Magenta, Weiß oder deiner eigenen Farbe |
+| Farbe | **Original / Einfarbig / Verlauf** | Originalfarben, einfarbig in Cyan, Grün, Bernstein, Eisblau, Magenta, Weiß oder eigener Farbe, oder ein Verlauf aus drei Farben |
 | Farbe | **Kontrast / Helligkeit** | Kontrast und Helligkeit des Signals |
 | Bildschirm | **Phosphor-Maske / Maskengröße / Masken-Stärke** | Art und Stärke des RGB-Rasters |
 | Bildschirm | **Scanlines / Leuchten / Leucht-Radius** | Dunkle Zeilenlücken und Leuchten heller Stellen |
 | Röhre | **Wölbung / Runde Ecken / Vignette** | Form der Röhre und abgedunkelte Ränder |
+| Röhre | **Schräge / Moiré / Reflex** | Abfotografiert-Look: gedreht und trapezförmig, Interferenzstreifen, Spiegelung und Lichtsaum |
 | Röhre | **RGB-Versatz / Geisterbild** | Farbsäume und ein versetztes Echo des Bilds |
 | Störungen | **Rauschen / Bildlauf-Balken / Tracking / Glitch** | Schnee, heller Balken, zitternde Zeilen und verschobene Blöcke |
+| Störungen | **Halbbild-Versatz / Schwingen / Einbrennen** | Verschobene Halbbilder, schwingendes Bild, festes Geisterbild |
 | Störungen | **Seed** | Neue Variante der Störungen |
+| Einblendung | **Art / Eigener Text / Farbe / Schriftgröße** | Pixelschrift wie bei Fernseher und Videorekorder |
 
 ## Ebenen im Dokument
 
@@ -83,7 +105,8 @@ Die Maske ist das feine RGB-Raster eines echten Bildschirms. Am besten siehst du
 ```
 MS Phase          (Gruppe, Gesamt-Deckkraft)
 ├─ Leuchten    Negativ multiplizieren
-├─ Glas        Multiplizieren (Vignette, runde Ecken)
+├─ Reflex      Negativ multiplizieren (Spiegelung, Lichtsaum)
+├─ Glas        Multiplizieren (Vignette, runde Ecken, Moiré)
 ├─ Scanlines   Multiplizieren
 ├─ Maske       Multiplizieren
 └─ Signal      Normal
@@ -91,7 +114,7 @@ MS Phase          (Gruppe, Gesamt-Deckkraft)
 
 **Nur ausgewählte Ebene**: Jede Ebene kommt in eine eigene Gruppe **„MS Phase · Name“**. Das Original liegt
 unverändert darin, das Signal deckt genau seine Form ab, wie ein Bildschirm in Form des Objekts. Ebenenmasken
-freigestellter Objekte werden berücksichtigt. Maske, Scanlines und Glas sind per Schnittmaske auf das Signal
+freigestellter Objekte werden berücksichtigt. Maske, Scanlines, Glas und Reflex sind per Schnittmaske auf das Signal
 begrenzt. Die **Gesamt-Deckkraft** mischt den Effekt hier mit dem Original. **Entfernen** stellt das Original
 an derselben Stelle wieder her.
 

@@ -104,3 +104,6 @@ select { width: 100%; }
 .seg.target .seg-btn { font-size: 11px; font-weight: bold; padding: 6px 0; }
 .seg.target .seg-btn.active { background-color: rgba(63, 212, 255, 0.35); }
 .target-info { font-size: 10px; padding: 3px 1px 2px; color: #9fe6ff; }
+.grad-presets { display: flex; flex-direction: row; flex-wrap: wrap; margin: 2px 0; }
+.grad { display: flex; flex-direction: row; height: 16px; width: 48px; margin: 0 4px 3px 0; border-radius: 3px; border: 1px solid var(--uxp-host-border-color); cursor: pointer; overflow: hidden; }
+.grad > div { flex: 1; height: 16px; }
