@@ -36,7 +36,7 @@ einer Gruppe, dein Artwork bleibt unverändert.
 - **Echte Ebenen**: Signal, Maske, Scanlines, Glas, Reflex und Leuchten, jeweils mit Mischmodus und Deckkraft
 - **Vorschau** des ganzen Bilds oder als Detail in 1:1, dazu **Live** im Dokument
 - **Einstellungen in der Gruppe**: Gruppe auswählen, und das Panel lädt ihre Werte wieder
-- **Selbsttest**: 40 Prüfungen gegen das echte Photoshop-Ergebnis
+- **Selbsttest**: 60 Prüfungen gegen das echte Photoshop-Ergebnis
 
 ## 25 Looks
 
