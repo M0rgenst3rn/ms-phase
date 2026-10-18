@@ -11,6 +11,7 @@
 const { app, core, action, imaging, constants } = require("photoshop");
 const { batchPlay } = action;
 const Core = require("./core.js");
+const UI = require("./ms-ui.js");
 const uxpStorage = require("uxp").storage;
 const lfs = uxpStorage.localFileSystem;
 
@@ -29,7 +30,7 @@ const RENDER_NAMES = new Set(Core.LAYERS.map((l) => l.name));
 const lineMode = (p) => p.mode !== "clear";
 const waveMode = (p) => p.mode === "wave" || p.mode === "swirl";
 const SLIDERS = [
-  { key: "strength", label: "Gesamt-Deckkraft", min: 0, max: 100, step: 1, unit: "%", parent: "secStrengthTop" },
+  { key: "strength", label: "Deckkraft", min: 0, max: 100, step: 1, unit: "%", parent: "secStrengthTop" },
   { key: "lines", label: "Zeilen", min: 40, max: 600, step: 1, unit: "", parent: "secSignal", tip: "Zeilen über die ganze Bildhöhe – wie die Auflösung eines Fernsehers" },
   { key: "wave", label: "Wellen", min: 0, max: 100, step: 1, unit: "%", parent: "secSignal", show: waveMode, tip: "Wie stark helle Stellen die Zeilen verbiegen" },
   { key: "smooth", label: "Glättung", min: 0, max: 100, step: 1, unit: "%", parent: "secSignal", show: waveMode, tip: "Weichere, größere Wellen" },
@@ -41,7 +42,7 @@ const SLIDERS = [
   { key: "maskStrength", label: "Masken-Stärke", min: 0, max: 100, step: 1, unit: "%", parent: "secMask", show: (p) => p.mask !== "none" },
   { key: "scanlines", label: "Scanlines", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
   { key: "bloom", label: "Leuchten", min: 0, max: 100, step: 1, unit: "%", parent: "secScreen" },
-  { key: "bloomRadius", label: "Leucht-Radius", min: 5, max: 100, step: 1, unit: "%", parent: "secScreen", show: (p) => p.bloom > 0 },
+  { key: "bloomRadius", label: "Leucht-Radius", min: 5, max: 100, step: 1, unit: "%", parent: "secScreen", show: (p) => p.bloom > 0, sub: true },
   { key: "curvature", label: "Wölbung", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
   { key: "corners", label: "Runde Ecken", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
   { key: "vignette", label: "Vignette", min: 0, max: 100, step: 1, unit: "%", parent: "secTube" },
@@ -287,33 +288,25 @@ function downsample(src, sw, sh, ox, oy, w, h, ps) {
   return out;
 }
 
-// ---------------------------------------------------------------- UI aufbauen
+// ---------------------------------------------------------------- Bedienelemente (Morgenstern-Design, ms-ui.js)
 function buildSliders() {
   for (const s of SLIDERS) {
-    const row = document.createElement("div");
-    row.className = "ctl";
-    if (s.tip) row.title = s.tip;
-    row.innerHTML = `<span class="ctl-label">${s.label}</span><sp-slider class="ctl-range" min="${s.min}" max="${s.max}" step="${s.step}"></sp-slider><input class="ctl-num" type="text"><span class="ctl-unit">${s.unit}</span>`;
-    $(s.parent).appendChild(row);
-    const range = row.querySelector(".ctl-range"), num = row.querySelector(".ctl-num");
-    ctl[s.key] = { range, num, row, def: s };
-    const onRange = () => { params[s.key] = Number(range.value); num.value = String(params[s.key]); activeLook = null; changed(); };
-    range.addEventListener("input", onRange);
-    range.addEventListener("change", onRange);
-    num.addEventListener("change", () => {
-      let v = parseFloat(String(num.value).replace(",", "."));
-      if (isNaN(v)) v = params[s.key];
-      params[s.key] = Math.max(s.min, Math.min(s.max, v));
-      activeLook = null; syncUI(); changed();
+    const c = UI.slider($(s.parent), Object.assign({ def: Core.DEFAULTS[s.key] }, s), {
+      get: () => params[s.key],
+      set: (v) => { params[s.key] = v; activeLook = null; changed(); },
+      done: () => syncUI(),
     });
+    ctl[s.key] = c;
   }
 }
 function buildStatic() {
-  $("modeSeg").innerHTML = Core.MODES.map((m) => `<div class="seg-btn" data-mode="${m.id}" title="${m.hint}">${m.name}</div>`).join("");
-  $("mask").innerHTML = Core.MASKS.map((m) => `<option value="${m.id}">${m.name}</option>`).join("");
-  $("osd").innerHTML = Core.OSDS.map((o) => `<option value="${o.id}">${o.name}</option>`).join("");
+  UI.seg($("modeSeg"), Core.MODES.map((m) => ({ id: m.id, name: m.name, tip: m.hint })), (v) => { params.mode = v; activeLook = null; syncUI(); changed(); });
+  UI.seg($("maskSeg"), Core.MASKS.map((m) => ({ id: m.id, name: m.name })), (v) => { params.mask = v; activeLook = null; syncUI(); changed(); });
+  UI.seg($("osdSeg"), Core.OSDS.map((o) => ({ id: o.id, name: o.name })), (v) => {
+    params.osd = v; activeLook = null; syncUI(); changed();
+    if (params.osd !== "none" && target === "layers") setStatus("Einblendungen erscheinen nur bei „Ganzes Dokument“.");
+  });
   $("gradPresets").innerHTML = Core.GRADIENTS.map((g, i) => `<div class="grad" data-grad="${i}" title="${g.name}"><div style="background-color:${g.low}"></div><div style="background-color:${g.mid}"></div><div style="background-color:${g.high}"></div></div>`).join("");
-  $("tintSwatches").innerHTML = Core.TINTS.map((t) => `<div class="sw" data-tint="${t.id}" title="${t.name}" style="background-color:${t.id}"></div>`).join("");
   const grid = $("lookGrid");
   grid.innerHTML = "";
   for (const pr of Core.PRESETS) {
@@ -327,12 +320,11 @@ function buildStatic() {
   }
   rebuildPresetSelect();
 }
+// eigene Presets als Liste: Klick lädt, × löscht
 function rebuildPresetSelect() {
-  const user = loadUserPresets();
-  let html = `<option value="">– Eigenes Preset laden –</option>`;
-  for (const n of Object.keys(user)) html += `<option value="${n}">★ ${n}</option>`;
-  $("presetSelect").innerHTML = html;
-  $("presetSelect").value = "";
+  UI.presetList($("presetList"), Object.keys(loadUserPresets()),
+    (n) => { params = Core.sanitize(loadUserPresets()[n]); activeLook = null; syncUI(); changed(); setStatus(`Preset „${n}“ geladen.`); },
+    (n) => { const u = loadUserPresets(); delete u[n]; saveUserPresets(u); rebuildPresetSelect(); setStatus(`Preset „${n}“ gelöscht.`); });
 }
 function applyLook(id) {
   const pr = Core.presetParams(id);
@@ -346,92 +338,78 @@ function applyLook(id) {
 function syncUI() {
   for (const key of Object.keys(ctl)) {
     const c = ctl[key];
-    c.range.value = String(params[key]); c.num.value = String(params[key]);
-    c.row.className = c.def.show && !c.def.show(params) ? "ctl hidden" : "ctl";
+    c.set(params[key]);
+    c.row.className = "sl" + (c.def.sub ? " sub" : "") + (c.def.show && !c.def.show(params) ? " hidden" : "");
   }
-  document.querySelectorAll("#modeSeg .seg-btn").forEach((el) => { el.className = el.dataset.mode === params.mode ? "seg-btn active" : "seg-btn"; });
+  UI.syncSeg($("modeSeg"), params.mode);
+  UI.syncSeg($("maskSeg"), params.mask);
+  UI.syncSeg($("osdSeg"), params.osd);
   document.querySelectorAll("#colorSeg .seg-btn").forEach((el) => { el.className = el.dataset.color === params.colorMode ? "seg-btn active" : "seg-btn"; });
   document.querySelectorAll("#targetSeg .seg-btn").forEach((el) => { el.className = el.dataset.target === target ? "seg-btn active" : "seg-btn"; });
   document.querySelectorAll("#previewModeSeg .seg-btn").forEach((el) => { el.className = el.dataset.mode === previewMode ? "seg-btn active" : "seg-btn"; });
-  document.querySelectorAll(".sw").forEach((el) => { el.className = el.dataset.tint === params.tint ? "sw active" : "sw"; });
   document.querySelectorAll(".look").forEach((el) => { el.className = el.dataset.id === activeLook ? "look active" : "look"; });
-  $("lookName").textContent = activeLook ? "· " + Core.PRESETS.find((x) => x.id === activeLook).name : "";
+  $("lookName").textContent = activeLook ? Core.PRESETS.find((x) => x.id === activeLook).name : "";
   $("modeHint").textContent = (Core.MODES.find((m) => m.id === params.mode) || {}).hint || "";
-  $("tintRow").className = params.colorMode === "phosphor" ? "row" : "row hidden";
-  $("gradRow").className = params.colorMode === "gradient" ? "" : "hidden";
-  for (const [id, key] of COLOR_FIELDS) { $("hex-" + id).value = params[key]; $("swatch-" + id).style.backgroundColor = params[key]; }
-  $("osd").value = params.osd;
+  $("tintRow").className = params.colorMode === "phosphor" ? "row sub" : "row sub hidden";
+  $("gradRow").className = params.colorMode === "gradient" ? "subgroup" : "subgroup hidden";
+  for (const [id, key] of COLOR_FIELDS) { $("swatch-" + id).style.backgroundColor = params[key]; $("hexl-" + id).textContent = params[key]; }
   $("osdControls").className = params.osd === "none" ? "hidden" : "";
+  $("osdName").textContent = params.osd === "none" ? "" : (Core.OSDS.find((o) => o.id === params.osd) || {}).name || "";
   if (document.activeElement !== $("osdText")) $("osdText").value = params.osdText;
-  $("mask").value = params.mask;
   $("seed").value = String(params.seed);
-  $("apply").textContent = target === "document" ? "Look anwenden" : "Auf Ebene anwenden";
+  UI.syncSwitches();
+  $("apply").textContent = target === "document" ? "Anwenden" : "Auf Ebene anwenden";
 }
 
+const SEC_KEY = "msphase.sections.v1";
+const SEC_DEFAULT = { looks: true, signal: true, color: true, screen: true, tube: false, noise: false, osd: false, more: false };
 function bindControls() {
-  document.querySelectorAll("#modeSeg .seg-btn").forEach((el) => el.addEventListener("click", () => { params.mode = el.dataset.mode; activeLook = null; syncUI(); changed(); }));
+  UI.sections(SEC_KEY, SEC_DEFAULT);
+  UI.bindSwitch("previewOriginal", () => renderPreview());
+  UI.bindSwitch("liveCanvas", (on) => {
+    liveLast = null;
+    if (on) applyEffect(true);
+    else setStatus("Live aus – der aktuelle Stand bleibt im Dokument.");
+  });
   document.querySelectorAll("#colorSeg .seg-btn").forEach((el) => el.addEventListener("click", () => { params.colorMode = el.dataset.color; activeLook = null; syncUI(); changed(); }));
-  document.querySelectorAll(".sw").forEach((el) => el.addEventListener("click", () => { params.tint = el.dataset.tint; activeLook = null; syncUI(); changed(); }));
   document.querySelectorAll("#targetSeg .seg-btn").forEach((el) => el.addEventListener("click", () => {
     target = el.dataset.target; saveTarget(); loadedKey = null; previewSrc = null; thumbSrc = null; syncUI(); refreshPreviewSource();
   }));
   document.querySelectorAll("#previewModeSeg .seg-btn").forEach((el) => el.addEventListener("click", () => { previewMode = el.dataset.mode; syncUI(); refreshPreviewSource(); }));
-  $("mask").addEventListener("change", (e) => { params.mask = e.target.value; activeLook = null; syncUI(); changed(); });
-  for (const [id, key] of COLOR_FIELDS) {
-    $("hex-" + id).addEventListener("change", (e) => {
-      let v = String(e.target.value).trim(); if (v[0] !== "#") v = "#" + v;
-      if (/^#[0-9a-f]{6}$/i.test(v)) params[key] = v.toLowerCase();
-      activeLook = null; syncUI(); changed();
-    });
-    $("swatch-" + id).addEventListener("click", () => pickColor(key));
-  }
+  for (const [id, key] of COLOR_FIELDS) $("swatch-" + id).addEventListener("click", () => openColor(id, key));
   document.querySelectorAll(".grad").forEach((el) => el.addEventListener("click", () => {
     const g = Core.GRADIENTS[Number(el.dataset.grad)];
-    Object.assign(params, { tintLow: g.low, tint: g.mid, tintHigh: g.high }); activeLook = null; syncUI(); changed();
+    Object.assign(params, { tintLow: g.low, tint: g.mid, tintHigh: g.high }); activeLook = null; UI.closeColorPop($("colorPop")); syncUI(); changed();
   }));
-  $("osd").addEventListener("change", (e) => {
-    params.osd = e.target.value; activeLook = null; syncUI(); changed();
-    if (params.osd !== "none" && target === "layers") setStatus("Einblendungen erscheinen nur bei „Ganzes Dokument“.");
-  });
   $("osdText").addEventListener("input", (e) => { params.osdText = Core.cleanOsdText(e.target.value); activeLook = null; changed(); });
   $("seed").addEventListener("change", (e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) params.seed = Math.max(0, Math.min(99999, v)); syncUI(); changed(); });
   $("dice").addEventListener("click", () => { params.seed = Math.floor(Math.random() * 99999); syncUI(); changed(); });
-  $("previewOriginal").addEventListener("change", () => renderPreview());
   $("refreshPreview").addEventListener("click", () => { previewSrc = null; refreshPreviewSource(); });
-  $("presetSelect").addEventListener("change", (e) => {
-    const src = loadUserPresets()[e.target.value];
-    if (!src) return;
-    params = Core.sanitize(src); activeLook = null;
-    syncUI(); changed();
-    setStatus(`Preset „${e.target.value}“ geladen.`);
-  });
   $("presetSave").addEventListener("click", () => {
     const name = String($("presetName").value || "").trim();
-    if (!name) return setStatus("Bitte einen Namen für das Preset eingeben.", true);
+    if (!name) return setStatus("Gib dem Preset zuerst einen Namen.", true);
     const user = loadUserPresets(); user[name] = Object.assign({}, params); saveUserPresets(user);
     rebuildPresetSelect(); $("presetName").value = "";
     setStatus(`Preset „${name}“ gespeichert.`);
   });
-  $("presetDelete").addEventListener("click", () => {
-    const v = $("presetSelect").value;
-    if (!v) return setStatus("Wähle zuerst ein eigenes Preset aus.", true);
-    const user = loadUserPresets(); delete user[v]; saveUserPresets(user); rebuildPresetSelect();
-    setStatus("Preset gelöscht.");
-  });
   $("resetAll").addEventListener("click", () => { params = Object.assign({}, Core.DEFAULTS); activeLook = "phase"; syncUI(); changed(); });
-  $("liveCanvas").addEventListener("change", (e) => {
-    liveLast = null;
-    if (e.target.checked) applyEffect(true);
-    else setStatus("Live aus – der aktuelle Stand bleibt im Dokument.");
-  });
   $("apply").addEventListener("click", () => applyEffect(false));
   $("remove").addEventListener("click", removeEffect);
   $("verify").addEventListener("click", verifyNowUI);
   $("selfTest").addEventListener("click", runSelfTest);
 }
 
-// Farbfelder: [Element-ID, Parameter]
+// Farbfelder: [Element-ID, Parameter] – eigenes Popover, Photoshops Farbwähler nur über „Exakt wählen…“
 const COLOR_FIELDS = [["tint", "tint"], ["tint2", "tint"], ["tintLow", "tintLow"], ["tintHigh", "tintHigh"], ["osdColor", "osdColor"]];
+const PHASE_PALETTE = Core.TINTS.map((t) => String(t.id).toLowerCase()).concat(UI.PALETTE).filter((c, i, a) => a.indexOf(c) === i);
+function openColor(id, key) {
+  UI.openColorPop({
+    pop: $("colorPop"), key: id, anchor: $("swatch-" + id), palette: PHASE_PALETTE,
+    get: () => params[key],
+    set: (c) => { params[key] = c; activeLook = null; syncUI(); changed(); },
+    exact: () => pickColor(key),
+  });
+}
 async function pickColor(key) {
   const c0 = hexToRgb(params[key]);
   try {

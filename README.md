@@ -79,13 +79,13 @@ jeder Dokumentgröße gleich aus, und die kleine Vorschau zeigt dasselbe wie das
 <p align="center"><img src="docs/images/masks.png" alt="Phosphor-Masken im Detail"></p>
 
 Die Maske ist das feine RGB-Raster eines echten Bildschirms. Am besten siehst du sie in der Vorschau unter
-**Detail 1:1**. Größe und Stärke stellst du im Panel ein, die Stärke auch später an der Ebene „Maske“.
+**1:1**. Größe und Stärke stellst du im Panel ein, die Stärke auch später an der Ebene „Maske“.
 
 ## Die Regler
 
 | Bereich | Regler | Was er macht |
 |---|---|---|
-| Oben | **Gesamt-Deckkraft** | Deckkraft der ganzen Gruppe |
+| Oben | **Deckkraft** | Deckkraft der ganzen Gruppe |
 | Signal | **Zeilen / Wellen / Glättung / Linienstärke / Punkte** | Auflösung, Wellen und Form der Zeilen. Es erscheinen nur die Regler, die zum Modus passen |
 | Farbe | **Original / Einfarbig / Verlauf** | Originalfarben, einfarbig in Cyan, Grün, Bernstein, Eisblau, Magenta, Weiß oder eigener Farbe, oder ein Verlauf aus drei Farben |
 | Farbe | **Kontrast / Helligkeit** | Kontrast und Helligkeit des Signals |
@@ -96,14 +96,14 @@ Die Maske ist das feine RGB-Raster eines echten Bildschirms. Am besten siehst du
 | Röhre | **RGB-Versatz / Geisterbild** | Farbsäume und ein versetztes Echo des Bilds |
 | Störungen | **Rauschen / Bildlauf-Balken / Tracking / Glitch** | Schnee, heller Balken, zitternde Zeilen und verschobene Blöcke |
 | Störungen | **Halbbild-Versatz / Schwingen / Einbrennen** | Verschobene Halbbilder, schwingendes Bild, festes Geisterbild |
-| Störungen | **Seed** | Neue Variante der Störungen |
+| Störungen | **Zufall** | Neue Variante der Störungen |
 | Einblendung | **Art / Eigener Text / Farbe / Schriftgröße** | Pixelschrift wie bei Fernseher und Videorekorder |
 
 ## Ebenen im Dokument
 
 **Ganzes Dokument**: Oben im Dokument entsteht eine Gruppe **„MS Phase“**:
 ```
-MS Phase          (Gruppe, Gesamt-Deckkraft)
+MS Phase          (Gruppe, Deckkraft)
 ├─ Leuchten    Negativ multiplizieren
 ├─ Reflex      Negativ multiplizieren (Spiegelung, Lichtsaum)
 ├─ Glas        Multiplizieren (Vignette, runde Ecken, Moiré)
@@ -112,10 +112,10 @@ MS Phase          (Gruppe, Gesamt-Deckkraft)
 └─ Signal      Normal
 ```
 
-**Nur ausgewählte Ebene**: Jede Ebene kommt in eine eigene Gruppe **„MS Phase · Name“**. Das Original liegt
+**Nur Ebene**: Jede Ebene kommt in eine eigene Gruppe **„MS Phase · Name“**. Das Original liegt
 unverändert darin, das Signal deckt genau seine Form ab, wie ein Bildschirm in Form des Objekts. Ebenenmasken
 freigestellter Objekte werden berücksichtigt. Maske, Scanlines, Glas und Reflex sind per Schnittmaske auf das Signal
-begrenzt. Die **Gesamt-Deckkraft** mischt den Effekt hier mit dem Original. **Entfernen** stellt das Original
+begrenzt. Die **Deckkraft** mischt den Effekt hier mit dem Original. **Entfernen** stellt das Original
 an derselben Stelle wieder her.
 
 ## Installation
@@ -137,10 +137,10 @@ an derselben Stelle wieder her.
 
 ## So benutzt du es
 
-1. **Ziel wählen**: unter der Vorschau **Ganzes Dokument** oder **Nur ausgewählte Ebene**. Darunter steht, was gerade bearbeitet wird
+1. **Ziel wählen**: unter der Vorschau **Ganzes Dokument** oder **Nur Ebene**. Darunter steht, was gerade bearbeitet wird
 2. **Look anklicken**: Die Vorschau zeigt das Ergebnis sofort
-3. **Feinschliff** mit den Reglern. **Detail 1:1** zeigt Maske und Zeilen in Originalgröße
-4. **Look anwenden** klicken oder **Live** einschalten
+3. **Feinschliff** mit den Reglern. **1:1** unten in der Vorschau zeigt Maske und Zeilen in Originalgröße
+4. **Anwenden** klicken oder **Live** einschalten
 5. **Später ändern**: Gruppe auswählen, Werte anpassen, erneut anwenden. Das Panel lädt die Einstellungen der Gruppe
 6. **Entfernen** löscht den Look wieder. Bei Ebenen kommt das Original zurück
 

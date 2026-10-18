@@ -2,144 +2,153 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <link rel="stylesheet" href="ms-ui.css">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="phase">
+<body>
   <div class="layout">
   <div class="top">
     <div class="header">
-      <span class="title"><b>MS</b> PHASE</span>
-      <span id="targetName" class="layer-name">–</span>
-    </div>
-    <div id="previewBox" class="preview-box tall">
-      <img id="preview" class="hidden">
-      <div id="previewMsg" class="preview-msg">Dokument öffnen…</div>
-    </div>
-    <div class="seg target" id="targetSeg">
-      <div class="seg-btn" data-target="document">▣ Ganzes Dokument</div>
-      <div class="seg-btn" data-target="layers">◧ Nur ausgewählte Ebene</div>
-    </div>
-    <div id="targetInfo" class="target-info"></div>
-    <div class="seg" id="previewModeSeg">
-      <div class="seg-btn active" data-mode="fit">Ganzes Bild</div>
-      <div class="seg-btn" data-mode="detail">Detail 1:1</div>
-    </div>
-    <div class="row between">
-      <label class="check"><input type="checkbox" id="previewOriginal"> Original zeigen</label>
-      <label class="check live" title="Änderungen direkt im Dokument anzeigen"><input type="checkbox" id="liveCanvas"> Live</label>
-      <sp-action-button size="s" quiet id="refreshPreview" title="Vorschau neu laden">↻</sp-action-button>
+      <span class="brand"><span class="dot"></span><span class="brand-ms">MS</span><span class="brand-name">Phase</span></span>
+      <span id="targetName" class="target-name">–</span>
     </div>
 
-    <div class="strength-row" id="secStrengthTop"></div>
+    <div id="previewBox" class="preview">
+      <img id="preview" class="hidden">
+      <div id="previewMsg" class="preview-msg">Dokument öffnen…</div>
+      <div class="preview-tools">
+        <div class="seg mini" id="previewModeSeg">
+          <div class="seg-btn active" data-mode="fit" title="Ganzes Bild">Ganz</div>
+          <div class="seg-btn" data-mode="detail" title="Ausschnitt in Originalgröße">1:1</div>
+        </div>
+        <div class="switch small" data-for="previewOriginal" data-kind="small" title="Vorschau ohne Effekt"><span class="knob"></span><span class="sw-label">Vorher</span></div>
+        <input type="checkbox" id="previewOriginal" class="hidden">
+      </div>
+    </div>
+
+    <div class="seg target" id="targetSeg">
+      <div class="seg-btn" data-target="document">Ganzes Dokument</div>
+      <div class="seg-btn" data-target="layers">Nur Ebene</div>
+    </div>
+    <div id="targetInfo" class="target-info"></div>
+
+    <div id="secStrengthTop" class="strength"></div>
     <div class="actions">
-      <sp-button size="s" variant="cta" id="apply">Look anwenden</sp-button>
-      <sp-button size="s" variant="secondary" id="remove">Entfernen</sp-button>
-      <sp-action-button size="s" quiet id="verify" title="Vergleicht das Ergebnis im Dokument mit den aktuellen Einstellungen">Prüfen</sp-action-button>
+      <div class="btn primary" id="apply">Anwenden</div>
+      <div class="switch" data-for="liveCanvas" title="Änderungen sofort im Dokument zeigen"><span class="knob"></span><span class="sw-label">Live</span></div>
+      <input type="checkbox" id="liveCanvas" class="hidden">
+      <div class="btn ghost" id="remove" title="Effekt aus dem Dokument entfernen">Entfernen</div>
     </div>
     <div id="status" class="status"></div>
   </div>
 
   <div class="scroller">
   <div class="wrap">
-    <div class="section first">
-      <div class="section-title">Looks <span id="lookName" class="muted"></span></div>
-      <div id="lookGrid" class="look-grid"></div>
+
+    <div class="sec" data-sec="looks">
+      <div class="sec-head"><span class="sec-title">Looks</span><span id="lookName" class="sec-meta"></span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
+      <div class="sec-body"><div id="lookGrid" class="look-grid"></div></div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Signal</div>
-      <div class="seg" id="modeSeg"></div>
-      <div id="modeHint" class="hint"></div>
-      <div id="secSignal"></div>
+    <div class="sec" data-sec="signal">
+      <div class="sec-head"><span class="sec-title">Signal</span><span class="sec-meta"></span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
+      <div class="sec-body">
+        <div class="seg" id="modeSeg"></div>
+        <div id="modeHint" class="hint mode-hint"></div>
+        <div id="secSignal"></div>
+      </div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Farbe</div>
-      <div class="seg" id="colorSeg">
-        <div class="seg-btn" data-color="original">Original</div>
-        <div class="seg-btn" data-color="phosphor">Einfarbig</div>
-        <div class="seg-btn" data-color="gradient">Verlauf</div>
-      </div>
-      <div id="tintRow" class="row">
-        <div id="tintSwatches" class="swatches"></div>
-        <div id="swatch-tint" class="swatch" title="Eigene Farbe wählen"></div>
-        <input type="text" id="hex-tint" class="hex" maxlength="7">
-      </div>
-      <div id="gradRow" class="hidden">
-        <div id="gradPresets" class="grad-presets"></div>
-        <div class="row">
-          <span class="ctl-label">Dunkel · Mitte · Hell</span>
-          <div id="swatch-tintLow" class="swatch" title="Dunkle Töne"></div>
-          <div id="swatch-tint2" class="swatch" title="Mitte"></div>
-          <div id="swatch-tintHigh" class="swatch" title="Helle Töne"></div>
+    <div class="sec" data-sec="color">
+      <div class="sec-head"><span class="sec-title">Farbe</span><span class="sec-meta"></span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
+      <div class="sec-body">
+        <div class="seg" id="colorSeg">
+          <div class="seg-btn" data-color="original">Original</div>
+          <div class="seg-btn" data-color="phosphor">Einfarbig</div>
+          <div class="seg-btn" data-color="gradient">Verlauf</div>
         </div>
+        <div id="tintRow" class="row sub">
+          <span class="field-label">Farbe</span><div id="swatch-tint" class="swatch" title="Farbe wählen"></div><span id="hexl-tint" class="hex-label"></span>
+        </div>
+        <div id="gradRow" class="subgroup">
+          <div id="gradPresets" class="grad-presets"></div>
+          <div class="row">
+            <span class="field-label">Dunkel</span><div id="swatch-tintLow" class="swatch" title="Dunkle Töne"></div><span id="hexl-tintLow" class="hex-label"></span>
+          </div>
+          <div class="row">
+            <span class="field-label">Mitte</span><div id="swatch-tint2" class="swatch" title="Mitteltöne"></div><span id="hexl-tint2" class="hex-label"></span>
+          </div>
+          <div class="row">
+            <span class="field-label">Hell</span><div id="swatch-tintHigh" class="swatch" title="Helle Töne"></div><span id="hexl-tintHigh" class="hex-label"></span>
+          </div>
+        </div>
+        <div id="secColor"></div>
+      </div>
+    </div>
+
+    <div class="sec" data-sec="screen">
+      <div class="sec-head"><span class="sec-title">Bildschirm</span><span class="sec-meta"></span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
+      <div class="sec-body">
+        <div class="field stack"><span class="field-label">Phosphor-Maske</span><div class="seg wrap" id="maskSeg"></div></div>
+        <div id="secMask"></div>
+        <div id="secScreen"></div>
+      </div>
+    </div>
+
+    <div class="sec" data-sec="tube">
+      <div class="sec-head"><span class="sec-title">Röhre</span><span class="sec-meta">Wölbung, Reflex, Versatz</span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
+      <div class="sec-body"><div id="secTube"></div></div>
+    </div>
+
+    <div class="sec" data-sec="noise">
+      <div class="sec-head"><span class="sec-title">Störungen</span><span class="sec-meta">Rauschen, Tracking, Glitch</span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
+      <div class="sec-body">
+        <div id="secNoise"></div>
         <div class="row">
-          <input type="text" id="hex-tintLow" class="hex" maxlength="7">
-          <input type="text" id="hex-tint2" class="hex" maxlength="7">
-          <input type="text" id="hex-tintHigh" class="hex" maxlength="7">
+          <span class="field-label">Zufall</span>
+          <input type="text" id="seed" class="num">
+          <div class="btn small" id="dice" title="Neues Zufallsmuster">Würfeln</div>
         </div>
       </div>
-      <div id="secColor"></div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Bildschirm</div>
-      <div class="row"><span class="ctl-label">Phosphor-Maske</span><select id="mask" class="grow"></select></div>
-      <div id="secMask"></div>
-      <div id="secScreen"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Röhre</div>
-      <div id="secTube"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Störungen</div>
-      <div id="secNoise"></div>
-      <div class="row">
-        <span class="ctl-label">Seed</span>
-        <input type="text" id="seed" class="seed">
-        <sp-action-button size="s" id="dice">🎲 Würfeln</sp-action-button>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Einblendung</div>
-      <div class="row"><span class="ctl-label">Art</span><select id="osd" class="grow"></select></div>
-      <div id="osdControls">
-        <div class="row">
-          <span class="ctl-label">Eigener Text</span>
-          <input type="text" id="osdText" class="grow" maxlength="28" placeholder="automatisch">
+    <div class="sec" data-sec="osd">
+      <div class="sec-head"><span class="sec-title">Einblendung</span><span id="osdName" class="sec-meta"></span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
+      <div class="sec-body">
+        <div class="seg wrap" id="osdSeg"></div>
+        <div id="osdControls">
+          <div class="row">
+            <span class="field-label">Text</span>
+            <input type="text" id="osdText" class="grow" maxlength="28" placeholder="automatisch">
+          </div>
+          <div class="row">
+            <span class="field-label">Farbe</span><div id="swatch-osdColor" class="swatch" title="Farbe der Einblendung"></div><span id="hexl-osdColor" class="hex-label"></span>
+          </div>
+          <div id="secOsd"></div>
+          <div class="hint">Pixelschrift wie bei Fernseher und Videorekorder (A–Z, 0–9, ▶, ●, : . - / !). Nur bei „Ganzes Dokument“.</div>
         </div>
+      </div>
+    </div>
+
+    <div class="sec" data-sec="more">
+      <div class="sec-head"><span class="sec-title">Eigene Presets &amp; Werkzeuge</span><span class="sec-meta"></span><span class="chev c-open">–</span><span class="chev c-closed">+</span></div>
+      <div class="sec-body">
+        <div id="presetList" class="preset-list"></div>
         <div class="row">
-          <span class="ctl-label">Farbe</span>
-          <div id="swatch-osdColor" class="swatch" title="Farbe der Einblendung"></div>
-          <input type="text" id="hex-osdColor" class="hex" maxlength="7">
+          <input type="text" id="presetName" class="grow" placeholder="Name für dieses Preset">
+          <div class="btn small" id="presetSave">Speichern</div>
         </div>
-        <div id="secOsd"></div>
-        <div class="hint">Pixelschrift wie bei Fernseher und Videorekorder (A–Z, 0–9, ▶, ●, : . - / !). Nur bei „Ganzes Dokument“.</div>
+        <div class="row tools-row">
+          <div class="btn small ghost" id="resetAll">Zurücksetzen</div>
+          <div class="btn small ghost" id="verify" title="Vergleicht das Ergebnis im Dokument mit den Einstellungen">Prüfen</div>
+          <div class="btn small ghost" id="selfTest" title="Legt ein Testdokument an und prüft alle Funktionen">Selbsttest</div>
+          <div class="btn small ghost" id="refreshPreview" title="Vorschau neu laden">Vorschau neu</div>
+        </div>
+        <div class="hint">MS Phase legt eine Gruppe mit echten Ebenen an: Signal, Maske, Scanlines, Glas, Reflex und Leuchten. Bei „Nur Ebene“ liegt das Original unter dem Effekt in der Gruppe; Entfernen stellt es wieder her. Deckkraft und Mischmodus lassen sich auch direkt in Photoshop ändern.</div>
       </div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Ebenen im Dokument</div>
-      <div class="hint">MS Phase legt eine Gruppe mit echten Ebenen an: <b>Signal</b>, <b>Maske</b>, <b>Scanlines</b>, <b>Glas</b> (Multiplizieren), <b>Reflex</b> und <b>Leuchten</b> (Negativ multiplizieren). Bei Ebenen liegt das Original sichtbar unter dem Effekt in der Gruppe – Entfernen stellt es wieder her. Deckkraft und Mischmodus lassen sich auch direkt in Photoshop ändern.</div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Eigene Presets</div>
-      <select id="presetSelect"></select>
-      <div class="row">
-        <input type="text" id="presetName" class="grow" placeholder="Eigenes Preset…">
-        <sp-action-button size="s" id="presetSave">Speichern</sp-action-button>
-        <sp-action-button size="s" quiet id="presetDelete">Löschen</sp-action-button>
-      </div>
-      <div class="row">
-        <sp-action-button size="s" quiet id="resetAll">Alles zurücksetzen</sp-action-button>
-        <sp-action-button size="s" quiet id="selfTest" title="Legt ein Testdokument an und prüft alle Funktionen">Selbsttest</sp-action-button>
-      </div>
-    </div>
+    <div id="colorPop" class="color-pop hidden"></div>
   </div>
   </div>
   </div>
