@@ -1,4 +1,4 @@
-// Renders a raw RGBA file with MS Phase and writes the composited result as PNG.
+// Renders a raw RGBA file with Vhold and writes the composited result as PNG.
 // node tools/render-test.js <in.raw> <w> <h> <out.png> [json-params | preset-id]
 const fs = require("fs"), path = require("path");
 const Core = require(path.join(__dirname, "..", "phase", "core.js"));

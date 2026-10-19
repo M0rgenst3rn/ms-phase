@@ -1,5 +1,5 @@
 "use strict";
-// MS Phase – core engine (plain JavaScript, runs in the panel and in Node).
+// Vhold – core engine (plain JavaScript, runs in the panel and in Node).
 // Turns an image into a CRT TV look. The result is several layers that Photoshop
 // later gets as real layers with blend modes:
 //   signal  Normal    the image as a TV signal (lines, colour, shift, interference, overlays)
@@ -90,7 +90,7 @@ const OSDS = [
 
 // Looks. Every look sets all values (missing = default), so they always look the same.
 const PRESETS = [
-  { id: "phase", name: "Phase", p: {} },
+  { id: "phase", name: "Vhold", p: {} },
   { id: "straight", name: "Lines", p: { mode: "straight", lines: 150, thickness: 80, wave: 0, tint: "#9fc8ff", bloom: 45 } },
   { id: "swirl", name: "Swirl", p: { mode: "swirl", wave: 60, lines: 160, tint: "#ff4fd8", bloom: 60 } },
   { id: "dotwave", name: "Dot Wave", p: { mode: "wave", dots: 70, lines: 140, thickness: 85, tint: "#3fd4ff", bloom: 65 } },

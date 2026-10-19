@@ -1,6 +1,6 @@
 {
-  "id": "com.linus.msphase",
-  "name": "MS Phase",
+  "id": "com.linus.vhold",
+  "name": "Vhold",
   "version": "0.2.0",
   "main": "index.html",
   "manifestVersion": 5,
@@ -16,7 +16,7 @@
       "type": "panel",
       "id": "phasePanel",
       "label": {
-        "default": "MS Phase"
+        "default": "Vhold"
       },
       "minimumSize": {
         "width": 260,

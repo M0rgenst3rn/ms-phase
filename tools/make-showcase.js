@@ -3,7 +3,7 @@
 const fs = require("fs"), path = require("path"), { execFileSync } = require("child_process");
 const Core = require(path.join(__dirname, "..", "phase", "core.js"));
 const { encodePNG } = require("./png.js");
-const OUT = path.join(__dirname, "..", "docs", "images"), TMP = fs.mkdtempSync(path.join(require("os").tmpdir(), "msphase-"));
+const OUT = path.join(__dirname, "..", "docs", "images"), TMP = fs.mkdtempSync(path.join(require("os").tmpdir(), "vhold-"));
 fs.mkdirSync(OUT, { recursive: true });
 function scene(w, h, text) {
   const f = path.join(TMP, `scene-${w}x${h}-${text.replace(/\W/g, "")}.png`);
@@ -39,11 +39,11 @@ for n,tile in enumerate(s["tiles"]):
 im.save(s["out"])
 `, js]);
 }
-const W = 960, H = 540, base = scene(W, H, "MS PHASE");
+const W = 960, H = 540, base = scene(W, H, "VHOLD");
 
-// 1) hero: the Phase look, large
+// 1) hero: the Vhold look, large
 {
-  const w = 1800, h = 760, src = scene(w, h, "MS PHASE");
+  const w = 1800, h = 760, src = scene(w, h, "VHOLD");
   const p = Object.assign(Core.presetParams("phase"), { lines: 210, bloom: 65, curvature: 18, corners: 22, vignette: 45 });
   fs.writeFileSync(path.join(OUT, "hero.png"), encodePNG(w, h, tv(src, w, h, p), 3));
 }
@@ -64,7 +64,7 @@ sheet("effects.png", "Gradient, filmed screen, interference, overlays", [
 ].map((t, n) => ({ img: save("fx-" + n, tv(base, W, H, t.p), W, H), label: t.label, sub: t.sub })), 3, 560, 315);
 // 4) phosphor masks up close (1:1 crop of a large scene)
 {
-  const bw = 2400, bh = 1350, big = scene(bw, bh, "MS PHASE");
+  const bw = 2400, bh = 1350, big = scene(bw, bh, "VHOLD");
   const cw = 360, ch = 220, ox = 1500, oy = 1000;
   const crop = (rgba) => { const o = new Uint8Array(cw * ch * 4); for (let y = 0; y < ch; y++) o.set(rgba.subarray(((oy + y) * bw + ox) * 4, ((oy + y) * bw + ox + cw) * 4), y * cw * 4); return o; };
   const part = crop(big);
@@ -80,7 +80,7 @@ sheet("effects.png", "Gradient, filmed screen, interference, overlays", [
   sheet("before-after.png", "", [
     { img: save("orig", orig, W, H), label: "Before" },
     { img: save("after-arcade", tv(base, W, H, Core.presetParams("arcade")), W, H), label: "Arcade" },
-    { img: save("after-phase", tv(base, W, H, Core.presetParams("phase")), W, H), label: "Phase" },
+    { img: save("after-phase", tv(base, W, H, Core.presetParams("phase")), W, H), label: "Vhold" },
   ], 3, 560, 315);
 }
 console.log("images written:", fs.readdirSync(OUT).join(", "));

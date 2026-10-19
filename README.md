@@ -1,19 +1,19 @@
 <p align="center">
-  <img src="docs/images/hero.png" alt="Morgenstern Phase" width="100%">
+  <img src="docs/images/hero.png" alt="Vhold" width="100%">
 </p>
 
 <p align="center">
   <b>CRT TV look for Photoshop: lines that bend with the image, phosphor masks, scanlines, bloom, curvature
   and interference – for the whole document or single layers, non-destructive.</b><br>
   <sub>Photoshop 2023 (24.2) or newer · UXP panel</sub><br>
-  <sub>Free tools by <b>Morgenstern</b> · <a href="https://github.com/M0rgenst3rn/ms-distress">Morgenstern Distress</a> · <a href="https://github.com/M0rgenst3rn/ms-printer">Morgenstern Printer</a> · <a href="https://github.com/M0rgenst3rn/ms-render">Morgenstern Render</a> · <b>Morgenstern Phase</b> · <a href="https://github.com/M0rgenst3rn/ms-glow">Morgenstern Glow</a> · <a href="https://github.com/M0rgenst3rn/ms-gradients">Morgenstern Gradients</a> · <a href="https://github.com/M0rgenst3rn/ms-grids">Morgenstern Grids</a></sub>
+  <sub>More tools by <b>Linus Leinberger</b> · <a href="https://github.com/M0rgenst3rn/afterglow">Afterglow</a> · <a href="https://github.com/M0rgenst3rn/asciiwave">Asciiwave</a> · <a href="https://github.com/M0rgenst3rn/gradient-library">Gradient Library</a> · <a href="https://github.com/M0rgenst3rn/gridwork">Gridwork</a> · <a href="https://github.com/M0rgenst3rn/grime">Grime</a> · <a href="https://github.com/M0rgenst3rn/headliner">Headliner</a> · <a href="https://github.com/M0rgenst3rn/misprint">Misprint</a> · <a href="https://github.com/M0rgenst3rn/seamline">Seamline</a> · <b>Vhold</b></sub>
 </p>
 
 ---
 
-## What is Morgenstern Phase?
+## What is Vhold?
 
-Morgenstern Phase turns your artwork into a picture on a cathode-ray tube. The signal runs across the screen
+Vhold turns your artwork into a picture on a cathode-ray tube. The signal runs across the screen
 in lines that, depending on the mode, stay straight, get thicker with brightness, or wrap around shapes like
 waves. On top of that there are phosphor masks, scanlines, bloom, curvature, vignette, colour gradients, the
 look of a photographed screen, interference like noise, interlacing, wobble and glitch blocks, and overlays in
@@ -101,9 +101,9 @@ strength in the panel; the strength also later on the layer "Mask".
 
 ## Layers in the document
 
-**Whole document**: a group **"MS Phase"** is created at the top of the document:
+**Whole document**: a group **"Vhold"** is created at the top of the document:
 ```
-MS Phase          (group, opacity)
+Vhold          (group, opacity)
 ├─ Bloom       Screen
 ├─ Reflex      Screen (reflection, light rim)
 ├─ Glass       Multiply (vignette, round corners, moiré)
@@ -112,7 +112,7 @@ MS Phase          (group, opacity)
 └─ Signal      Normal
 ```
 
-**Layer only**: every layer gets its own group **"MS Phase · name"**. The original sits inside it unchanged,
+**Layer only**: every layer gets its own group **"Vhold · name"**. The original sits inside it unchanged,
 and the signal covers exactly its shape, like a screen in the shape of the object. Layer masks of cut-out
 objects are respected. Mask, scanlines, glass and reflex are clipped to the signal. Here **Opacity** mixes the
 effect with the original. **Remove** puts the original back in the same place.
@@ -126,7 +126,7 @@ effect with the original. **Remove** puts the original back in the same place.
    ```bash
    bash install-mac.sh
    ```
-3. (Re)start Photoshop → **Plugins › MS Phase**
+3. (Re)start Photoshop → **Plugins › Vhold**
 
 ### Alternative: UXP Developer Tool (macOS & Windows)
 
@@ -151,7 +151,7 @@ effect with the original. **Remove** puts the original back in the same place.
 phase/               The plugin (loaded into Photoshop as is)
   manifest.json      Plugin description
   index.html         Panel UI
-  ms-ui.js/.css      Shared Morgenstern controls and design
+  ui.js/.css      Shared controls and design
   main.js            Photoshop side (groups, layers, preview, Live, verify, self-test)
   core.js            Effect engine, plain JavaScript
 install-mac.sh       Packs the plugin (.ccx) and installs it
@@ -166,7 +166,7 @@ node tools/make-showcase.js                               # rebuild the images o
 
 ## Found a bug? Got an idea?
 
-Get in touch! The easiest way is **[Issues](https://github.com/M0rgenst3rn/ms-phase/issues)** here on GitHub:
+Get in touch! The easiest way is **[Issues](https://github.com/M0rgenst3rn/vhold/issues)** here on GitHub:
 click **New issue** and briefly describe what happened. Your Photoshop version, operating system and a
 screenshot help a lot. All you need is a free GitHub account. Suggestions and feature requests are just as
 welcome.
@@ -184,5 +184,5 @@ Adobe and Photoshop are trademarks of Adobe Inc. This project is independent and
 
 ---
 
-<p align="center"><sub>Morgenstern Phase<br>
-Made by Linus Leinberger</sub></p>
+<p align="center"><sub>Vhold<br>
+Made by Linus Leinberger · <a href="https://www.instagram.com/linusleinberger">Instagram @linusleinberger</a></sub></p>

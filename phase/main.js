@@ -1,9 +1,9 @@
 "use strict";
-// MS Phase – Photoshop-UXP-Panel.
+// Vhold – Photoshop-UXP-Panel.
 // CRT TV look for the whole document or single layers, non-destructive:
-//  • Whole document: a group "MS Phase" on top with real layers (signal, mask, scanlines, glass, bloom).
+//  • Whole document: a group "Vhold" on top with real layers (signal, mask, scanlines, glass, bloom).
 //    The artwork below stays untouched.
-//  • Selected layers: each layer moves into a group "MS Phase · name"; the original stays visible inside,
+//  • Selected layers: each layer moves into a group "Vhold · name"; the original stays visible inside,
 //    the signal covers exactly its shape (layer mask respected), mask/scanlines/glass are clipped
 //    to the signal. Remove restores everything.
 // The settings live in the XMP of the signal layer – selecting the group loads them back into the panel.
@@ -11,18 +11,18 @@
 const { app, core, action, imaging, constants } = require("photoshop");
 const { batchPlay } = action;
 const Core = require("./core.js");
-const UI = require("./ms-ui.js");
+const UI = require("./ui.js");
 const uxpStorage = require("uxp").storage;
 const lfs = uxpStorage.localFileSystem;
 
 const $ = (id) => document.getElementById(id);
-const STORE_KEY = "msphase.state.v1";
-const TARGET_KEY = "msphase.target.v1";
-const PRESET_KEY = "msphase.presets.v1";
-const GROUP_DOC = "MS Phase";
-const LAYER_PREFIX = "MS Phase · ";
-const HIST = "MS Phase";
-const XMP_NS = "http://ms-phase/1.0/";
+const STORE_KEY = "vhold.state.v1";
+const TARGET_KEY = "vhold.target.v1";
+const PRESET_KEY = "vhold.presets.v1";
+const GROUP_DOC = "Vhold";
+const LAYER_PREFIX = "Vhold · ";
+const HIST = "Vhold";
+const XMP_NS = "http://vhold/1.0/";
 const MAX_PIXELS = 60e6;
 const TARGET = [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }];
 // effect layer names, including the German names of earlier versions
@@ -133,7 +133,7 @@ function toRGBA(raw, comps, n) {
 }
 function needsRGB(doc) {
   if (String(doc.mode).toLowerCase().indexOf("rgb") >= 0) return false;
-  setStatus("MS Phase needs an RGB document – Image › Mode › RGB Color.", true);
+  setStatus("Vhold needs an RGB document – Image › Mode › RGB Color.", true);
   return true;
 }
 
@@ -152,7 +152,7 @@ function log(msg, data) {
 // ---------------------------------------------------------------- XMP (settings on the signal layer)
 function xmpFor(p, sourceId) {
   const json = JSON.stringify({ params: p, sourceId: sourceId || null }).replace(/&/g, "&amp;").replace(/</g, "&lt;");
-  return `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:msphase="${XMP_NS}"><msphase:params>${json}</msphase:params></rdf:Description></rdf:RDF></x:xmpmeta>`;
+  return `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:vhold="${XMP_NS}"><vhold:params>${json}</vhold:params></rdf:Description></rdf:RDF></x:xmpmeta>`;
 }
 async function writeXmp(layerId, p, sourceId) {
   await batchPlay([{ _obj: "set", _target: [{ _ref: "property", _property: "XMPMetadataAsUTF8" }, { _ref: "layer", _id: layerId }], to: { _obj: "layer", XMPMetadataAsUTF8: xmpFor(p, sourceId) } }], {});
@@ -161,7 +161,7 @@ async function readXmp(layerId) {
   try {
     const r = await batchPlay([{ _obj: "get", _target: [{ _property: "XMPMetadataAsUTF8" }, { _ref: "layer", _id: layerId }] }], {});
     const x = r && r[0] && r[0].XMPMetadataAsUTF8;
-    const m = x && /<msphase:params>([\s\S]*?)<\/msphase:params>/.exec(x);
+    const m = x && /<vhold:params>([\s\S]*?)<\/vhold:params>/.exec(x);
     if (!m) return null;
     const o = JSON.parse(m[1].replace(/&lt;/g, "<").replace(/&amp;/g, "&"));
     return { params: Core.sanitize(o.params), sourceId: o.sourceId || null };
@@ -289,7 +289,7 @@ function downsample(src, sw, sh, ox, oy, w, h, ps) {
   return out;
 }
 
-// ---------------------------------------------------------------- Controls (Morgenstern design, ms-ui.js)
+// ---------------------------------------------------------------- Controls (shared design, ui.js)
 function buildSliders() {
   for (const s of SLIDERS) {
     const c = UI.slider($(s.parent), Object.assign({ def: Core.DEFAULTS[s.key] }, s), {
@@ -362,7 +362,7 @@ function syncUI() {
   $("apply").textContent = target === "document" ? "Apply" : "Apply to layer";
 }
 
-const SEC_KEY = "msphase.sections.v1";
+const SEC_KEY = "vhold.sections.v1";
 const SEC_DEFAULT = { looks: true, signal: true, color: true, screen: true, osd: false, fine: false, more: false };
 function bindControls() {
   UI.sections(SEC_KEY, SEC_DEFAULT);
@@ -416,7 +416,7 @@ async function pickColor(key) {
   try {
     let res;
     await core.executeAsModal(async () => {
-      res = await batchPlay([{ _obj: "showColorPicker", _target: { _ref: "application" }, context: "MS Phase", color: { _obj: "RGBColor", red: c0.r, grain: c0.g, blue: c0.b } }], {});
+      res = await batchPlay([{ _obj: "showColorPicker", _target: { _ref: "application" }, context: "Vhold", color: { _obj: "RGBColor", red: c0.r, grain: c0.g, blue: c0.b } }], {});
     }, { commandName: "Pick colour" });
     const c = res && res[0] && (res[0].RGBFloatColor || res[0].color);
     if (c && c.red !== undefined) { params[key] = rgbToHex(c.red, c.grain !== undefined ? c.grain : c.green, c.blue); activeLook = null; syncUI(); changed(); }
@@ -828,7 +828,7 @@ async function verifyDocument(ctx, doc, p) {
 }
 async function verifyLayerTarget(ctx, doc, t, p) {
   const r = { errors: [] };
-  if (!t.group) { r.errors.push(`"${t.source.name}" belongs to no MS Phase group`); r.ok = false; return r; }
+  if (!t.group) { r.errors.push(`"${t.source.name}" belongs to no Vhold group`); r.ok = false; return r; }
   if (!t.source.visible) r.errors.push("original is hidden");
   if (t.group.name !== LAYER_PREFIX + t.source.name) r.errors.push(`group name "${t.group.name}"`);
   const kids = Array.from(t.group.layers);
@@ -896,13 +896,13 @@ async function runSelfTest() {
   setStatus("Self-test running… (1–2 minutes, please don't click)");
   try {
     await core.executeAsModal(async () => {
-      doc = await app.documents.add({ width: 900, height: 520, resolution: 72, mode: "RGBColorMode", fill: "white", name: "MS Phase self-test" });
+      doc = await app.documents.add({ width: 900, height: 520, resolution: 72, mode: "RGBColorMode", fill: "white", name: "Vhold self-test" });
       await batchPlay([{ _obj: "make", _target: [{ _ref: "layer" }], using: { _obj: "layer", name: "Artwork" } }], {});
       const al = doc.activeLayers[0]; artId = al.id;
       const id = await imaging.createImageDataFromBuffer(testArtwork(900, 520), { width: 900, height: 520, components: 4, chunky: true, colorSpace: "RGB", colorProfile: "sRGB IEC61966-2.1" });
       await imaging.putPixels({ documentID: doc.id, layerID: al.id, imageData: id, targetBounds: { left: 0, top: 0 } });
       id.dispose();
-      await batchPlay([{ _obj: "make", _target: [{ _ref: "textLayer" }], using: { _obj: "textLayer", textKey: "MS Phase",
+      await batchPlay([{ _obj: "make", _target: [{ _ref: "textLayer" }], using: { _obj: "textLayer", textKey: "Vhold",
         textClickPoint: { _obj: "paint", horizontal: { _unit: "percentUnit", _value: 52 }, vertical: { _unit: "percentUnit", _value: 88 } },
         textStyleRange: [{ _obj: "textStyleRange", from: 0, to: 5, textStyle: { _obj: "textStyle", size: { _unit: "pointsUnit", _value: 110 }, color: { _obj: "RGBColor", red: 250, grain: 250, blue: 250 } } }] } }], {});
       textId = doc.activeLayers[0].id;

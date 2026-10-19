@@ -4,7 +4,7 @@ import sys, math
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 out, W, H = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
-text = sys.argv[4] if len(sys.argv) > 4 else "MS PHASE"
+text = sys.argv[4] if len(sys.argv) > 4 else "VHOLD"
 img = Image.new("RGB", (W, H))
 px = img.load()
 hor = int(H * 0.62)
